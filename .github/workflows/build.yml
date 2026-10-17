@@ -1,0 +1,32 @@
+name: Build Mindustry Mod
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - uses: actions/setup-java@v3
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    - run: |
+        BUILD_TOOLS_VERSION=$(ls /usr/local/lib/android/sdk/build-tools/ | tail -1)
+        sudo ln -s /usr/local/lib/android/sdk/build-tools/$BUILD_TOOLS_VERSION/d8 /usr/local/bin/d8
+
+    - run: |
+        chmod +x gradlew
+        ./gradlew jarAndroid
+
+    - uses: actions/upload-artifact@v3
+      with:
+        name: AdvancedRedactor-Android
+        path: build/libs/AdvancedRedactor.jar
