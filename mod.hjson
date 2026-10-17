@@ -1,5 +1,10 @@
 name: "advanced-redactor"
 displayName: "Advanced Redactor"
-author: "3301"
-version: 1.0
-minGameVersion: 159
+author: "3301 (AKA Mellory) and VI Clan"
+description: "Advanced map editor tools and custom world generation.\n\nGlory to VI, Brothers and Sisters."
+subtitle: "Glory to VI!"
+version: "1.0"
+hidden: "true"
+minGameVersion: "160"
+java: true
+main: "advancedredactor.AdvancedRedactorMod"
