@@ -1,11 +1,51 @@
 name: "advanced-redactor"
-displayName: "[[]#fed570] Adv[[]][[]#feba93]anced[[]] [[]#fea0b6]Red[[]][[]#ff85d9]act[[]][[]#ff6afc]or [[]]"
-author: "3301 (AKA Mellory) and VI Clan"
-description: "Advanced map editor tools and custom world generation."
-subtitle: "Glory to VI!"
+displayName: "[[]#00f2fe] Adv[[]][[]#24d2fe]anced[[]] [[]#48b2fe]Red[[]][[]#6c92fe]act[[]][[]#9072fe]or [[]]"
+subtitle: "[[]#ff6b6b]⚠ Created by VI[[]] [[]#ffd3b0]Clan [[]]"
+author: "[[]#00f2fe]⚠ 3301[[]] [[]#48b2fe]and[[]] [[]#9072fe]VI Clan [[]]"
+main: "advancedredactor.AdvancedRedactorMod"
+repo: "itzmellory/Advanced-Redactor"
 version: "1.0"
 minGameVersion: "160"
 java: true
 hidden: true
-main: "advancedredactor.AdvancedRedactorMod"
-repo: "itzmellory/Advanced-Redactor"
+
+description:
+    '''
+    [[]#00f2fe] The[[]] [[]#24d2fe]Ulti[[]][[]#48b2fe]mate[[]] [[]#6c92fe]Map[[]] [[]#9072fe]Editor [[]]
+
+    [[]#7af0ff] Next-generation terrain synthesis and advanced mapping utilities[[]]
+    [[]#d0e8ff]Maps created with this mod are[[]] [[]#89ff7a]100% compatible with vanilla Mindustry [[]]
+
+    [[]#00f2fe] Fea[[]][[]#48b2fe]tures[[]] [[]#9072fe](EN):[[]]
+
+    [[]#00f2fe]- Adv[[]][[]#36c2fe]anced[[]] [[]#6c92fe]Terrain[[]] [[]#9072fe]Creator  -[[]]
+    [[]#c4d7ff]Multi-layered biome generation, jagged cliffs, shoreline outlines, central basins, and procedural cave networks.[[]]
+
+    [[]#00f2fe]- Cus[[]][[]#36c2fe]tom[[]] [[]#6c92fe]Editor[[]] [[]#9072fe]UI  -[[]]
+    [[]#c4d7ff]Seamlessly integrated panels and extended filter controls directly inside the map generator.[[]]
+
+    [[]#00f2fe]- Com[[]][[]#36c2fe]plete[[]] [[]#6c92fe]Terrain[[]] [[]#9072fe]Control  -[[]]
+    [[]#c4d7ff]Domain warping, ridged noise, Void Border masks, and multi-floor blending for realistic landscapes.[[]]
+
+    [[]#00f2fe]───────[[]][[]#24d2fe]───────[[]][[]#48b2fe]───  ───[[]][[]#6c92fe]───────[[]][[]#9072fe]───────[[]]
+
+    [[]#00f2fe] Про[[]][[]#24d2fe]двину[[]][[]#48b2fe]тый[[]] [[]#6c92fe]Редак[[]][[]#9072fe]тор Карт [[]]
+
+    [[]#7af0ff] Генерация сложного рельефа нового поколения и инструменты картографа[[]]
+    [[]#d0e8ff]Карты, созданные с этим модом,[[]] [[]#89ff7a]полностью совместимы с ванильной игрой [[]]
+
+    [[]#00f2fe] Осо[[]][[]#48b2fe]бенно[[]][[]#9072fe]сти (RU):[[]]
+
+    [[]#00f2fe]- Про[[]][[]#36c2fe]двинутый[[]] [[]#6c92fe]Создатель[[]] [[]#9072fe]Рельефа  -[[]]
+    [[]#c4d7ff]Многослойные биомы, рваные скалы, береговая окантовка, центральные озера и процедурные сети каньонов и пещер.[[]]
+
+    [[]#00f2fe]- Рас[[]][[]#36c2fe]ширен[[]][[]#6c92fe]ный[[]] [[]#9072fe]Интерфейс  -[[]]
+    [[]#c4d7ff]Удобные кастомные панели и гибкие настройки фильтров, встроенные прямо в меню генерации.[[]]
+
+    [[]#00f2fe]- Пол[[]][[]#36c2fe]ный[[]] [[]#6c92fe]Контроль[[]] [[]#9072fe]Ландшафта  -[[]]
+    [[]#c4d7ff]Искажение координат, гребневый шум, маска внешних границ (Void Border) и смешивание пород.[[]]
+
+    [[]#00f2fe]───────[[]][[]#24d2fe]───────[[]][[]#48b2fe]───  ───[[]][[]#6c92fe]───────[[]][[]#9072fe]───────[[]]
+
+    [[]#ff6b6b]⚠ Glo[[]][[]#ff8e82]ry to[[]] [[]#ffb199]VI, Bro[[]][[]#ffd3b0]thers and[[]] [[]#ffece0]Sisters! [[]]
+    '''
