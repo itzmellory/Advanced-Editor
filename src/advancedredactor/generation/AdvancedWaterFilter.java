@@ -21,7 +21,7 @@ public class AdvancedWaterFilter extends GenerateFilter {
     }
     @Override
     public char icon() {
-        return Iconc.blockWater;
+        return Iconc.liquidWater;
     }
     @Override
     public FilterOption[] options() {
