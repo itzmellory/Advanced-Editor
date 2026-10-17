@@ -13,7 +13,7 @@ import static advancedredactor.ui.ModFilterOptions.*;
 public class AdvancedTerrainFilter extends GenerateFilter {
     public Block floor = Blocks.stone;
     public Block floor2 = Blocks.sand;
-    public Block floor3 = Blocks.Snow;
+    public Block floor3 = Blocks.snow;
     public Block rimFloor = Blocks.sand;
     public Block block = Blocks.stoneWall;
     public Block block2 = Blocks.duneWall;
@@ -136,8 +136,8 @@ public class AdvancedTerrainFilter extends GenerateFilter {
             }
         }
 
-        float baseNoise = (float) Simplex.noise2d(seed, octaves, falloff, 1f / scale, wx, wy);
-        float ridgeNoise = 1f - Math.abs((float) Simplex.noise2d(seed + 37, Math.max(1, octaves - 1), falloff, 1f / (scale * 0.6f), wx, wy) * 2f - 1f);
+        float baseNoise = (float) Simplex.noise2d(seed, (int) octaves, falloff, 1f / scale, wx, wy);
+        float ridgeNoise = 1f - Math.abs((float) Simplex.noise2d(seed + 37, Math.max(1, (int) octaves - 1), falloff, 1f / (scale * 0.6f), wx, wy) * 2f - 1f);
         float height = Mathf.lerp(baseNoise, ridgeNoise, jaggedness) * magnitude;
 
         Block selectedFloor = floor;
