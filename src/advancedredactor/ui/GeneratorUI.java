@@ -52,6 +52,7 @@ public class GeneratorUI {
         customPanel.add("[accent]Advanced Redactor[]").height(28f).padBottom(6f).left().row();
         addFilterButton(customPanel, addDialog, new AdvancedTerrainFilter());
         addFilterButton(customPanel, addDialog, new AdvancedWaterFilter());
+        addFilterButton(customPanel, addDialog, new AdvancedRuinFilter());
         wrapper.add(customPanel).top();
         addDialog.cont.add(wrapper);
     }
