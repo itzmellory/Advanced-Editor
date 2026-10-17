@@ -25,6 +25,7 @@ public class AdvancedRedactorMod extends Mod {
             Prov<GenerateFilter>[] current = Maps.allFilterTypes;
             Seq<Prov<GenerateFilter>> list = Seq.with(current);
             list.add(AdvancedTerrainFilter::new);
+            list.add(GeometricStyleFilter::new);
             Reflect.set(Maps.class, "allFilterTypes", list.toArray(Prov.class));
         } catch (Exception ignored) {
         }
