@@ -15,7 +15,7 @@ import advancedredactor.generation.*;
 public class GeneratorUI {
     private static final ObjectSet<Dialog> hookedDialogs = new ObjectSet<>();
     public static void init() {
-        Events.run(Trigger.update, () -> {
+        Events.run{Trigger.update, () -> {
             if (Core.scene == null) return;
             for (Element el : Core.scene.root.getChildren()) {
                 if (el instanceof BaseDialog) {
