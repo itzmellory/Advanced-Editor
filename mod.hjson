@@ -1,9 +1,0 @@
-name: "advanced-redactor"
-displayName: "Advanced Redactor"
-author: "3301 (AKA Mellory) and VI Clan"
-description: "Advanced map editor tools and custom world generation."
-version: "1.0"
-minGameVersion: "160"
-java: true
-main: "advancedredactor.AdvancedRedactorMod"
-repo: "itzmellory/Advanced-Redactor"
