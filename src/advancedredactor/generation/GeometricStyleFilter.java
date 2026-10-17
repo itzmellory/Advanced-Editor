@@ -57,15 +57,15 @@ public class GeometricStyleFilter extends GenerateFilter {
             new SliderOption("borderIndent", () -> borderIndent, f -> borderIndent = f, 0f, 1f, 0.05f),
 
             new ToggleOption("centralSpine", () -> centralSpine, b -> centralSpine = b),
-            new SliderOption("spineVariant", () -> spineVariant, i -> spineVariant = i, 0, 7, 1),
+            new SliderOption("spineVariant", () -> (float) spineVariant, f -> spineVariant = (int) f, 0f, 7f, 1f),
             new SliderOption("spineScale", () -> spineScale, f -> spineScale = f, 0.4f, 1.8f, 0.05f),
             new SliderOption("ribFrequency", () -> ribFrequency, f -> ribFrequency = f, 0f, 1f, 0.05f),
 
             new SliderOption("pillarDensity", () -> pillarDensity, f -> pillarDensity = f, 0f, 0.85f, 0.05f),
-            new SliderOption("pillarVariant", () -> pillarVariant, i -> pillarVariant = i, 0, 4, 1),
+            new SliderOption("pillarVariant", () -> (float) pillarVariant, f -> pillarVariant = (int) f, 0f, 4f, 1f),
             new SliderOption("rimWidth", () -> rimWidth, f -> rimWidth = f, 0f, 8f, 1f),
             new SliderOption("floorPattern", () -> floorPattern, f -> floorPattern = f, 0f, 1f, 0.05f),
-            new SliderOption("floorPatternVariant", () -> floorPatternVariant, i -> floorPatternVariant = i, 0, 4, 1),
+            new SliderOption("floorPatternVariant", () -> (float) floorPatternVariant, f -> floorPatternVariant = (int) f, 0f, 4f, 1f),
             new ToggleOption("clearExterior", () -> clearExterior, b -> clearExterior = b)
         };
     }
@@ -109,7 +109,7 @@ public class GeometricStyleFilter extends GenerateFilter {
         return Math.abs(d - radius) - thickness;
     }
 
-    private float buildSpine(float x, float y, float cx, float cy, float s, float w, float h) {
+    private float buildSpine(float x, float y, float cx, float cy, float s) {
         float thick = Math.max(4f, Math.round(s * 0.24f));
         float cut = thick * 0.6f * chamferRatio;
         float d = 9999f;
@@ -322,7 +322,7 @@ public class GeometricStyleFilter extends GenerateFilter {
 
         if (centralSpine) {
             float s = Math.min(w, h) * 0.16f * spineScale;
-            internalDist = Math.min(internalDist, buildSpine(x, y, cx, cy, s, w, h));
+            internalDist = Math.min(internalDist, buildSpine(x, y, cx, cy, s));
         }
 
         if (pillarDensity > 0.01f) {
@@ -367,4 +367,4 @@ public class GeometricStyleFilter extends GenerateFilter {
             }
         }
     }
-                                              }
+            }
