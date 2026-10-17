@@ -113,7 +113,7 @@ public class ModFilterOptions {
                         });
                         if (++i % 10 == 0) t.row();
                     }
-                }).Size(420f, 340f);
+                }).size(420f, 340f);
                 dialog.addCloseButton();
                 dialog.show();
             }).size(40f).right().colspan(2);
