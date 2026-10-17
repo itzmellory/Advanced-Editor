@@ -116,8 +116,8 @@ public class GeometricStyleFilter extends GenerateFilter {
 
         if (borderIndent > 0.01f) {
             float bStep = step * 1.5f;
-            int gx = Mathf.Floor((x + bStep * 0.5f) / bStep);
-            int gy = Mathf.Floor((y + bStep * 0.5f) / bStep);
+            int gx = Mathf.floor((x + bStep * 0.5f) / bStep);
+            int gy = Mathf.floor((y + bStep * 0.5f) / bStep);
 
             for (int ox = -1; ox <= 1; ox++) {
                 for (int oy = -1; oy <= 1; oy++) {
@@ -175,8 +175,8 @@ public class GeometricStyleFilter extends GenerateFilter {
 
         if (pillarDensity > 0.01f) {
             float pStep = step * 1.35f;
-            int px = Mathf.Floor((x + pStep * 0.5f) / pStep);
-            int py = Mathf.Floor((y + pStep * 0.5f) / pStep);
+            int px = Mathf.floor((x + pStep * 0.5f) / pStep);
+            int py = Mathf.floor((y + pStep * 0.5f) / pStep);
 
             for (int ox = -1; ox <= 1; ox++) {
                 for (int oy = -1; oy <= 1; oy++) {
@@ -242,4 +242,4 @@ public class GeometricStyleFilter extends GenerateFilter {
             }
         }
     }
-                                      }
+}
