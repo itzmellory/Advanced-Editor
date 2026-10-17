@@ -22,12 +22,15 @@ public class GeometricStyleFilter extends GenerateFilter {
     public float borderIndent = 0.55f;
 
     public boolean centralSpine = true;
+    public int spineVariant = 0;
     public float spineScale = 1.0f;
     public float ribFrequency = 0.65f;
 
     public float pillarDensity = 0.35f;
+    public int pillarVariant = 0;
     public float rimWidth = 3f;
     public float floorPattern = 0.3f;
+    public int floorPatternVariant = 0;
     public boolean clearExterior = false;
 
     @Override
@@ -54,12 +57,15 @@ public class GeometricStyleFilter extends GenerateFilter {
             new SliderOption("borderIndent", () -> borderIndent, f -> borderIndent = f, 0f, 1f, 0.05f),
 
             new ToggleOption("centralSpine", () -> centralSpine, b -> centralSpine = b),
+            new SliderOption("spineVariant", () -> spineVariant, i -> spineVariant = i, 0, 7, 1),
             new SliderOption("spineScale", () -> spineScale, f -> spineScale = f, 0.4f, 1.8f, 0.05f),
             new SliderOption("ribFrequency", () -> ribFrequency, f -> ribFrequency = f, 0f, 1f, 0.05f),
 
             new SliderOption("pillarDensity", () -> pillarDensity, f -> pillarDensity = f, 0f, 0.85f, 0.05f),
+            new SliderOption("pillarVariant", () -> pillarVariant, i -> pillarVariant = i, 0, 4, 1),
             new SliderOption("rimWidth", () -> rimWidth, f -> rimWidth = f, 0f, 8f, 1f),
             new SliderOption("floorPattern", () -> floorPattern, f -> floorPattern = f, 0f, 1f, 0.05f),
+            new SliderOption("floorPatternVariant", () -> floorPatternVariant, i -> floorPatternVariant = i, 0, 4, 1),
             new ToggleOption("clearExterior", () -> clearExterior, b -> clearExterior = b)
         };
     }
@@ -96,6 +102,176 @@ public class GeometricStyleFilter extends GenerateFilter {
 
         float diagDist = Math.abs((px - x1) + (py - y1)) * 0.5f - thickness;
         return Math.max(bound, diagDist);
+    }
+
+    private static float ringDist(float px, float py, float cx, float cy, float radius, float thickness) {
+        float d = Mathf.dst(px, py, cx, cy);
+        return Math.abs(d - radius) - thickness;
+    }
+
+    private float buildSpine(float x, float y, float cx, float cy, float s, float w, float h) {
+        float thick = Math.max(4f, Math.round(s * 0.24f));
+        float cut = thick * 0.6f * chamferRatio;
+        float d = 9999f;
+
+        switch (spineVariant) {
+            case 0: {
+                d = Math.min(d, diagSpineSegment(x, y, cx - s * 0.7f, cy + s * 0.9f, cx + s * 0.5f, cy - s * 0.3f, thick, cut));
+                d = Math.min(d, octBoxDist(x, y, cx + s * 0.85f, cy + s * 0.15f, thick * 0.75f, s * 0.65f, cut));
+                d = Math.min(d, octBoxDist(x, y, cx + s * 0.45f, cy - s * 0.45f, s * 0.55f, thick * 0.8f, cut));
+                break;
+            }
+            case 1: {
+                d = Math.min(d, octBoxDist(x, y, cx, cy, thick * 1.1f, s * 1.1f, cut));
+                d = Math.min(d, octBoxDist(x, y, cx, cy, s * 1.1f, thick * 1.1f, cut));
+                d = Math.min(d, octBoxDist(x, y, cx, cy, thick * 0.9f, thick * 0.9f, cut * 1.4f));
+                d = Math.min(d, diagSpineSegment(x, y, cx - s * 0.85f, cy - s * 0.85f, cx + s * 0.85f, cy + s * 0.85f, thick * 0.55f, cut * 0.7f));
+                d = Math.min(d, diagSpineSegment(x, y, cx - s * 0.85f, cy + s * 0.85f, cx + s * 0.85f, cy - s * 0.85f, thick * 0.55f, cut * 0.7f));
+                break;
+            }
+            case 2: {
+                d = Math.min(d, ringDist(x, y, cx, cy, s * 0.75f, thick * 0.6f));
+                d = Math.min(d, ringDist(x, y, cx, cy, s * 0.45f, thick * 0.45f));
+                d = Math.min(d, octBoxDist(x, y, cx, cy, thick * 0.85f, thick * 0.85f, cut * 1.2f));
+                for (int a = 0; a < 4; a++) {
+                    float ang = a * Mathf.PI * 0.5f + Mathf.PI * 0.25f;
+                    float ax = cx + Mathf.cos(ang) * s * 0.75f;
+                    float ay = cy + Mathf.sin(ang) * s * 0.75f;
+                    d = Math.min(d, octBoxDist(x, y, ax, ay, thick * 0.7f, thick * 0.7f, cut));
+                }
+                break;
+            }
+            case 3: {
+                d = Math.min(d, octBoxDist(x, y, cx, cy + s * 0.55f, s * 0.6f, thick * 0.85f, cut));
+                d = Math.min(d, octBoxDist(x, y, cx, cy - s * 0.55f, s * 0.6f, thick * 0.85f, cut));
+                d = Math.min(d, octBoxDist(x, y, cx, cy, thick * 1.3f, s * 0.5f, cut));
+                d = Math.min(d, diagSpineSegment(x, y, cx - s * 0.6f, cy + s * 0.55f, cx - s * 0.85f, cy, thick * 0.5f, cut * 0.6f));
+                d = Math.min(d, diagSpineSegment(x, y, cx + s * 0.6f, cy + s * 0.55f, cx + s * 0.85f, cy, thick * 0.5f, cut * 0.6f));
+                d = Math.min(d, diagSpineSegment(x, y, cx - s * 0.6f, cy - s * 0.55f, cx - s * 0.85f, cy, thick * 0.5f, cut * 0.6f));
+                d = Math.min(d, diagSpineSegment(x, y, cx + s * 0.6f, cy - s * 0.55f, cx + s * 0.85f, cy, thick * 0.5f, cut * 0.6f));
+                break;
+            }
+            case 4: {
+                float armLen = s * 1.05f;
+                d = Math.min(d, diagSpineSegment(x, y, cx - armLen, cy - armLen, cx + armLen, cy - armLen, thick * 0.6f, cut * 0.8f));
+                d = Math.min(d, diagSpineSegment(x, y, cx + armLen, cy - armLen, cx + armLen, cy + armLen, thick * 0.6f, cut * 0.8f));
+                d = Math.min(d, diagSpineSegment(x, y, cx + armLen, cy + armLen, cx - armLen, cy + armLen, thick * 0.6f, cut * 0.8f));
+                d = Math.min(d, diagSpineSegment(x, y, cx - armLen, cy + armLen, cx - armLen, cy - armLen, thick * 0.6f, cut * 0.8f));
+                d = Math.min(d, octBoxDist(x, y, cx, cy, thick * 1.2f, thick * 1.2f, cut * 1.5f));
+                d = Math.min(d, diagSpineSegment(x, y, cx - armLen * 0.7f, cy - armLen * 0.7f, cx + armLen * 0.7f, cy + armLen * 0.7f, thick * 0.4f, cut * 0.5f));
+                break;
+            }
+            case 5: {
+                d = Math.min(d, octBoxDist(x, y, cx, cy, thick * 0.7f, s * 1.15f, cut));
+                d = Math.min(d, octBoxDist(x, y, cx - s * 0.55f, cy, thick * 0.55f, s * 0.8f, cut));
+                d = Math.min(d, octBoxDist(x, y, cx + s * 0.55f, cy, thick * 0.55f, s * 0.8f, cut));
+                for (int i = 0; i < 3; i++) {
+                    float oy = s * (0.65f - i * 0.65f);
+                    d = Math.min(d, octBoxDist(x, y, cx - s * 0.55f, cy + oy, s * 0.4f, thick * 0.4f, cut * 0.5f));
+                    d = Math.min(d, octBoxDist(x, y, cx + s * 0.55f, cy + oy, s * 0.4f, thick * 0.4f, cut * 0.5f));
+                }
+                break;
+            }
+            case 6: {
+                d = Math.min(d, octBoxDist(x, y, cx - s * 0.35f, cy + s * 0.3f, thick * 0.9f, s * 0.85f, cut));
+                d = Math.min(d, octBoxDist(x, y, cx + s * 0.35f, cy - s * 0.3f, thick * 0.9f, s * 0.85f, cut));
+                d = Math.min(d, diagSpineSegment(x, y, cx - s * 0.35f, cy + s * 1.15f, cx + s * 0.35f, cy - s * 1.15f, thick * 0.5f, cut * 0.7f));
+                d = Math.min(d, octBoxDist(x, y, cx, cy, s * 0.35f, thick * 0.5f, cut * 0.8f));
+                break;
+            }
+            case 7: {
+                d = Math.min(d, ringDist(x, y, cx, cy, s * 0.9f, thick * 0.45f));
+                d = Math.min(d, ringDist(x, y, cx, cy, s * 0.55f, thick * 0.55f));
+                d = Math.min(d, octBoxDist(x, y, cx, cy, thick * 0.8f, thick * 0.8f, cut * 1.3f));
+                d = Math.min(d, diagSpineSegment(x, y, cx - s * 0.9f, cy, cx + s * 0.9f, cy, thick * 0.45f, cut * 0.6f));
+                d = Math.min(d, diagSpineSegment(x, y, cx, cy - s * 0.9f, cx, cy + s * 0.9f, thick * 0.45f, cut * 0.6f));
+                break;
+            }
+        }
+
+        if (ribFrequency > 0.05f) {
+            int ribCount = 5;
+            for (int i = 0; i < ribCount; i++) {
+                if (hashFloat(seed + 53, i, spineVariant) <= ribFrequency) {
+                    float ribY = cy + s * (1.0f - i * 0.42f);
+                    float ribLen = s * (0.35f + (i % 3) * 0.18f);
+                    float ribX = cx - ribLen * 0.65f + (i % 2 == 0 ? 0 : s * 0.1f);
+                    float ribH = Math.max(3f, Math.round(thick * 0.45f));
+                    float dRib = octBoxDist(x, y, ribX, ribY, ribLen * 0.5f, ribH, ribH * 0.5f * chamferRatio);
+                    d = Math.min(d, dRib);
+                    if (ribFrequency > 0.5f) {
+                        float ribX2 = cx + ribLen * 0.65f - (i % 2 == 0 ? 0 : s * 0.1f);
+                        float dRib2 = octBoxDist(x, y, ribX2, ribY, ribLen * 0.5f, ribH, ribH * 0.5f * chamferRatio);
+                        d = Math.min(d, dRib2);
+                    }
+                }
+            }
+        }
+
+        return d;
+    }
+
+    private float buildPillar(float x, float y, float cellX, float cellY, float pStep) {
+        int pType;
+        if (pillarVariant == 0) {
+            pType = hash(seed + 101, (int) cellX, (int) cellY) % 4;
+        } else {
+            pType = (pillarVariant - 1) % 4;
+        }
+
+        float d;
+        if (pType == 0) {
+            float r = Math.round(pStep * 0.26f);
+            d = octBoxDist(x, y, cellX, cellY, r, r, r * 1.1f * chamferRatio);
+        } else if (pType == 1) {
+            float r = Math.round(pStep * 0.22f);
+            d = diagSpineSegment(x, y, cellX - r, cellY - r, cellX + r, cellY + r, r * 0.75f, r * 0.5f);
+        } else if (pType == 2) {
+            float rx = Math.round(pStep * 0.32f);
+            float ry = Math.round(pStep * 0.18f);
+            d = octBoxDist(x, y, cellX, cellY, rx, ry, ry * 0.8f * chamferRatio);
+        } else {
+            float r = Math.round(pStep * 0.16f);
+            d = octBoxDist(x, y, cellX, cellY, r, r, 0f);
+        }
+        return d;
+    }
+
+    private Block pickFloor(float x, float y, float step) {
+        if (floorPattern <= 0.01f) return floor;
+
+        int patStep = Math.max(6, Math.round(step * 0.4f));
+        int tx = ((int) x) / patStep;
+        int ty = ((int) y) / patStep;
+        int lx = ((int) x) % patStep;
+        int ly = ((int) y) % patStep;
+
+        switch (floorPatternVariant) {
+            case 0: {
+                boolean isTechLine = (lx == 0 || ly == 0 || (lx + ly == patStep)) && hashFloat(seed + 149, tx, ty) < floorPattern;
+                return isTechLine ? accentFloor : floor;
+            }
+            case 1: {
+                boolean isDiamond = (Math.abs(lx - patStep / 2) + Math.abs(ly - patStep / 2) == patStep / 2) && hashFloat(seed + 151, tx, ty) < floorPattern;
+                return isDiamond ? accentFloor : floor;
+            }
+            case 2: {
+                boolean isChecker = ((tx + ty) & 1) == 0 && hashFloat(seed + 157, tx, ty) < floorPattern;
+                return isChecker ? accentFloor : floor;
+            }
+            case 3: {
+                boolean isCross = ((lx == patStep / 2 || ly == patStep / 2) && hashFloat(seed + 163, tx, ty) < floorPattern);
+                return isCross ? accentFloor : floor;
+            }
+            case 4: {
+                int cell = patStep / 3;
+                if (cell < 2) return floor;
+                boolean isDot = (lx % cell == 0 && ly % cell == 0) && hashFloat(seed + 167, tx, ty) < floorPattern;
+                return isDot ? accentFloor : floor;
+            }
+            default:
+                return floor;
+        }
     }
 
     @Override
@@ -146,31 +322,7 @@ public class GeometricStyleFilter extends GenerateFilter {
 
         if (centralSpine) {
             float s = Math.min(w, h) * 0.16f * spineScale;
-            float thick = Math.max(4f, Math.round(s * 0.24f));
-            float cut = thick * 0.6f * chamferRatio;
-
-            float dDiag = diagSpineSegment(x, y, cx - s * 0.7f, cy + s * 0.9f, cx + s * 0.5f, cy - s * 0.3f, thick, cut);
-            internalDist = Math.min(internalDist, dDiag);
-
-            float dRightArm = octBoxDist(x, y, cx + s * 0.85f, cy + s * 0.15f, thick * 0.75f, s * 0.65f, cut);
-            internalDist = Math.min(internalDist, dRightArm);
-
-            float dBottomHook = octBoxDist(x, y, cx + s * 0.45f, cy - s * 0.45f, s * 0.55f, thick * 0.8f, cut);
-            internalDist = Math.min(internalDist, dBottomHook);
-
-            if (ribFrequency > 0.05f) {
-                int ribCount = 4;
-                for (int i = 0; i < ribCount; i++) {
-                    if (hashFloat(seed + 53, i, 0) <= ribFrequency) {
-                        float ribY = cy + s * (0.85f - i * 0.42f);
-                        float ribLen = s * (0.45f + (i % 2) * 0.2f);
-                        float ribX = ( cx - (ribY - cy) * 0.75f ) - ribLen * 0.65f;
-                        float ribH = Math.max(3f, Math.round(thick * 0.48f));
-                        float dRib = octBoxDist(x, y, ribX, ribY, ribLen * 0.5f, ribH, ribH * 0.5f * chamferRatio);
-                        internalDist = Math.min(internalDist, dRib);
-                    }
-                }
-            }
+            internalDist = Math.min(internalDist, buildSpine(x, y, cx, cy, s, w, h));
         }
 
         if (pillarDensity > 0.01f) {
@@ -189,23 +341,7 @@ public class GeometricStyleFilter extends GenerateFilter {
                     if (checkArena > pStep * 0.35f) {
                         float rnd = hashFloat(seed + 89, nx, ny);
                         if (rnd < pillarDensity * 0.42f) {
-                            int pType = hash(seed + 101, nx, ny) % 4;
-                            float dPillar;
-                            if (pType == 0) {
-                                float r = Math.round(pStep * 0.26f);
-                                dPillar = octBoxDist(x, y, cellX, cellY, r, r, r * 1.1f * chamferRatio);
-                            } else if (pType == 1) {
-                                float r = Math.round(pStep * 0.22f);
-                                dPillar = diagSpineSegment(x, y, cellX - r, cellY - r, cellX + r, cellY + r, r * 0.75f, r * 0.5f);
-                            } else if (pType == 2) {
-                                float rx = Math.round(pStep * 0.32f);
-                                float ry = Math.round(pStep * 0.18f);
-                                dPillar = octBoxDist(x, y, cellX, cellY, rx, ry, ry * 0.8f * chamferRatio);
-                            } else {
-                                float r = Math.round(pStep * 0.16f);
-                                dPillar = octBoxDist(x, y, cellX, cellY, r, r, 0f);
-                            }
-                            internalDist = Math.min(internalDist, dPillar);
+                            internalDist = Math.min(internalDist, buildPillar(x, y, cellX, cellY, pStep));
                         }
                     }
                 }
@@ -227,19 +363,8 @@ public class GeometricStyleFilter extends GenerateFilter {
             if (rimWidth > 0.1f && finalSignedDist <= rimWidth) {
                 in.floor = rimFloor;
             } else {
-                if (floorPattern > 0.01f) {
-                    int patStep = Math.max(6, Math.round(step * 0.4f));
-                    int tx = ((int) x) / patStep;
-                    int ty = ((int) y) / patStep;
-                    int lx = ((int) x) % patStep;
-                    int ly = ((int) y) % patStep;
-
-                    boolean isTechLine = (lx == 0 || ly == 0 || (lx + ly == patStep)) && hashFloat(seed + 149, tx, ty) < floorPattern;
-                    in.floor = isTechLine ? accentFloor : floor;
-                } else {
-                    in.floor = floor;
-                }
+                in.floor = pickFloor(x, y, step);
             }
         }
     }
-}
+                                              }
