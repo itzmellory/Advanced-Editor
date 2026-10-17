@@ -293,7 +293,8 @@ public class AdvancedWaterFilter extends GenerateFilter {
         }
         @Override public boolean equals(Object o){
             if(this==o) return true;
-            if(!(o instanceof CacheKey k)) return false;
+            if(!(o instanceof CacheKey)) return false;
+            CacheKey k=(CacheKey)o;
             return w==k.w&&h==k.h&&s==k.s&&cov==k.cov&&scl==k.scl&&cx==k.cx&&eb==k.eb&&sw==k.sw&&shw==k.shw&&dws==k.dws&&dwm==k.dwm&&sf==k.sf&&shf==k.shf&&nc==k.nc&&sfN.equals(k.sfN)&&shfN.equals(k.shfN)&&dfN.equals(k.dfN);
         }
         @Override public int hashCode(){return w*31+h*31+s*31+cov;}
