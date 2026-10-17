@@ -7,7 +7,6 @@ import mindustry.gen.Iconc;
 import mindustry.maps.filters.FilterOption;
 import mindustry.maps.filters.GenerateFilter;
 import mindustry.world.Block;
-import mindustry.world.Tile;
 import mindustry.world.blocks.environment.Floor;
 import mindustry.world.blocks.environment.OreBlock;
 import advancedredactor.ui.ModFilterOptions.*;
@@ -17,10 +16,10 @@ import java.util.Random;
 import static mindustry.maps.filters.FilterOption.*;
 import static advancedredactor.ui.ModFilterOptions.*;
 public class AdvancedRuinFilter extends GenerateFilter {
-    public Block replaceOverlay=Blocks.metalTiles1;
+    public Block replaceOverlay=Blocks.coreZone;
     public float centerModeVal=1f,generationModeVal=1f,structurePresetVal=2f;
-    public Block structureFloor=Blocks.metalFloor,structureMainFloor=Blocks.metalTiles1;
-    public Block structureWall=Blocks.metalWall2,structureAccentWall=Blocks.metalWall1,structureDamageFloor=Blocks.metalFloorDamaged;
+    public Block structureFloor=Blocks.metalFloor,structureMainFloor=Blocks.darkPanel1;
+    public Block structureWall=Blocks.darkMetal,structureAccentWall=Blocks.metalWall,structureDamageFloor=Blocks.metalFloorDamaged;
     public float autoDensity=25f,minCenterSpacing=24f;
     public RuinStep[] steps=RuinStep.defaults();
     public float scl=40f,threshold=0.5f,octaves=3f,falloff=0.5f,tilt=0f,distortScl=10f,distortMag=5f;
@@ -99,9 +98,9 @@ public class AdvancedRuinFilter extends GenerateFilter {
         StructuredRuinLayout.Spec sp=StructuredRuinLayout.spec(w,h,preset);
         Block[] gf=new Block[size],gw=new Block[size];
         boolean[] gfb=new boolean[size],gwb=new boolean[size],cf=new boolean[size],cw=new boolean[size];
-        Block sw=structureWall==Blocks.air||structureWall.isStatic()?structureWall:Blocks.metalWall2;
-        Block aw=structureAccentWall==Blocks.air||structureAccentWall.isStatic()?structureAccentWall:Blocks.metalWall1;
-        Block dw=structureWall==Blocks.metalWall3?structureWall:structureAccentWall==Blocks.metalWall3?structureAccentWall:Blocks.metalWall3;
+        Block sw=structureWall==Blocks.air||structureWall.isStatic()?structureWall:Blocks.darkMetal;
+        Block aw=structureAccentWall==Blocks.air||structureAccentWall.isStatic()?structureAccentWall:Blocks.metalWall;
+        Block dw=structureWall==Blocks.scrapWall?structureWall:structureAccentWall==Blocks.scrapWall?structureAccentWall:Blocks.scrapWall;
         for(int ci=0;ci<centers.size;ci++){
             int cX=centers.get(ci)%w,cY=centers.get(ci)/w;
             StructuredRuinLayout.Layout l=StructuredRuinLayout.generate(w,h,cX,cY,seed,preset);
@@ -114,7 +113,7 @@ public class AdvancedRuinFilter extends GenerateFilter {
                     boolean p=l.criticalFloor[loc];
                     Block f=l.mainFloor[loc]?structureMainFloor:l.panelFloor[loc]?structurePanelFloor(x,y,cX,cY):structureFloor;
                     if(!(f instanceof Floor)) f=structureFloor;
-                    if(!p&&structuredDamage(x,y,cX,cY,sp.floorDamage,0x31)) f=structureDamageFloorVariant(x,y,cX,cY);
+                    if(!p&&structuredDamage(x,y,cX,cY,sp.fd,0x31)) f=structureDamageFloorVariant(x,y,cX,cY);
                     if(f instanceof Floor){
                         if(!gfb[i]||p||!cf[i]){gf[i]=f;cf[i]=p;}
                         gfb[i]=true;gwb[i]=false;gw[i]=null;
@@ -122,7 +121,7 @@ public class AdvancedRuinFilter extends GenerateFilter {
                 }else if((l.wall[loc]||l.debrisWall[loc])&&!gfb[i]){
                     boolean p=l.criticalWall[loc];
                     Block wl=l.mainWall[loc]?sw:l.debrisWall[loc]?dw:aw;
-                    if(!p&&structuredDamage(x,y,cX,cY,sp.wallDamage,0x57)) wl=Blocks.air;
+                    if(!p&&structuredDamage(x,y,cX,cY,sp.wd,0x57)) wl=Blocks.air;
                     if(wl!=null){
                         if(!gwb[i]||p||!cw[i]){gw[i]=wl;cw[i]=p;}
                         gwb[i]=true;
@@ -143,14 +142,14 @@ public class AdvancedRuinFilter extends GenerateFilter {
     private Block structurePanelFloor(int x,int y,int cX,int cY){
         int v=seed^x*0x9e3779b9^y*0x85ebca6b^cX*0xc2b2ae35^cY*0x27d4eb2d;
         v^=v>>>16;
-        switch(v&3){case 0:return Blocks.metalTiles2;case 1:return Blocks.metalTiles3;case 2:return Blocks.metalTiles4;default:return Blocks.metalTiles2;}
+        switch(v&3){case 0:return Blocks.darkPanel1;case 1:return Blocks.darkPanel2;case 2:return Blocks.darkPanel3;default:return Blocks.darkPanel1;}
     }
     private Block structureDamageFloorVariant(int x,int y,int cX,int cY){
         int v=seed^x*0x632be59b^y*0x85157af5^cX*0xc2b2ae35^cY*0x27d4eb2d;
         v^=v>>>16;
         switch(v&15){
             case 5:return Blocks.metalFloorDamaged;case 6:return Blocks.metalFloor2;case 7:return Blocks.metalFloor3;case 8:return Blocks.metalFloor4;
-            case 9:return Blocks.metalFloor5;case 10:return Blocks.metalTiles8;case 11:return Blocks.metalTiles11;default:return structureDamageFloor;
+            case 9:return Blocks.metalFloor5;case 10:return Blocks.darkPanel1;case 11:return Blocks.darkPanel4;default:return structureDamageFloor;
         }
     }
     private void applyDistort(TileState[] s,TileState[] bl,int w,int h){
@@ -193,9 +192,9 @@ public class AdvancedRuinFilter extends GenerateFilter {
             boolean st=generationModeVal>=0.5f&&Math.min(in.width,in.height)>=24;
             int pr=(int)Math.max(0,Math.min(2,structurePresetVal));
             StructuredRuinLayout.Spec sp=st?StructuredRuinLayout.spec(in.width,in.height,pr):null;
-            float esp=Math.max(spc,st?sp.span:0f);
+            float esp=Math.max(spc,st?sp.sp:0f);
             CenterIndex sel=new CenterIndex(in.width,in.height,(int)Math.max(1,Math.ceil(esp)));
-            StructureIndex occ=st?new StructureIndex(in.width,in.height,sp.span):null;
+            StructureIndex occ=st?new StructureIndex(in.width,in.height,sp.sp):null;
             int sx=(seed^0x13579bdf)&0x7fffffff%in.width,sy=(seed^0x2468ace0)&0x7fffffff%in.height;
             out:for(int ox=0;ox<in.width;ox++) for(int oy=0;oy<in.height;oy++){
                 int x=(sx+ox)%in.width,y=(sy+oy)%in.height;
@@ -213,20 +212,18 @@ public class AdvancedRuinFilter extends GenerateFilter {
             }
             return;
         }
-        Block m=replaceOverlay==null?Blocks.metalTiles1:replaceOverlay;
+        Block m=replaceOverlay==null?Blocks.coreZone:replaceOverlay;
         if(m==null) return;
         for(int x=0;x<in.width;x++) for(int y=0;y<in.height;y++){
-            Tile t=null;try{t=in.tile(x,y);}catch(Exception ignored){}
-            if(t!=null&&t.overlay()==m) centers.add(x+y*in.width);
-            else if(t==null&&x==in.x&&y==in.y&&in.overlay==m) centers.add(x+y*in.width);
+            if(in.x==x&&in.y==y&&in.overlay==m) centers.add(x+y*in.width);
         }
     }
     private boolean isAutoCenterCandidate(TileState s){return s.floor!=null&&!s.floor.isLiquid&&s.block!=null&&!s.block.synthetic();}
     private void applyStep(TileState s,TileState bl,RuinStep st,int i){
-        if(st.floor!=null&&st.floor==Blocks.removeWall){s.floor=bl.floor;floorModified[i]=false;}
-        else if(st.floor!=null&&st.floor!=Blocks.removeWall&&st.floor instanceof Floor){s.floor=(Floor)st.floor;floorModified[i]=true;}
-        if(st.removeWall||(st.wall!=null&&st.wall==Blocks.removeWall)){s.block=Blocks.air;blockModified[i]=true;}
-        else if(st.wall!=null&&st.wall!=Blocks.removeWall){s.block=st.wall;blockModified[i]=true;}
+        if(st.floor!=null&&st.floor==Blocks.air){s.floor=bl.floor;floorModified[i]=false;}
+        else if(st.floor!=null&&st.floor!=Blocks.air&&st.floor instanceof Floor){s.floor=(Floor)st.floor;floorModified[i]=true;}
+        if(st.removeWall||(st.wall!=null&&st.wall==Blocks.air)){s.block=Blocks.air;blockModified[i]=true;}
+        else if(st.wall!=null&&st.wall!=Blocks.air){s.block=st.wall;blockModified[i]=true;}
     }
     private boolean passesNoise(float x,float y){
         float sc=Math.max(scl,1f),vl=Float.isFinite(threshold)?threshold:0.5f;
@@ -237,8 +234,6 @@ public class AdvancedRuinFilter extends GenerateFilter {
     private float distortionNoise(int so,float x,float y,float sc,float mg){return Simplex.noise2d(seed+so,1f,0f,1f/sc,x+10f,y+10f)*mg;}
     private float maxStepRadius(){float m=0f;if(steps!=null)for(RuinStep s:steps)if(s!=null&&Float.isFinite(s.radius))m=Math.max(m,s.radius);return m;}
     private TileState readState(GenerateInput in,int x,int y){
-        Tile t=null;try{t=in.tile(x,y);}catch(Exception ignored){}
-        if(t!=null){TileState s=new TileState();s.block=t.block();s.floor=t.floor();s.overlay=t.overlay();return s;}
         if(x==in.x&&y==in.y){
             TileState s=new TileState();s.block=in.block==null?Blocks.air:in.block;
             s.floor=in.floor instanceof Floor?(Floor)in.floor:(Blocks.air instanceof Floor?(Floor)Blocks.air:null);
@@ -249,9 +244,9 @@ public class AdvancedRuinFilter extends GenerateFilter {
     private void ensureDefaults(){
         if(replaceOverlay==null) replaceOverlay=Blocks.air;
         if(structureFloor==null) structureFloor=Blocks.metalFloor;
-        if(structureMainFloor==null) structureMainFloor=Blocks.metalTiles1;
-        if(structureWall==null) structureWall=Blocks.metalWall2;
-        if(structureAccentWall==null) structureAccentWall=Blocks.metalWall1;
+        if(structureMainFloor==null) structureMainFloor=Blocks.darkPanel1;
+        if(structureWall==null) structureWall=Blocks.darkMetal;
+        if(structureAccentWall==null) structureAccentWall=Blocks.metalWall;
         if(structureDamageFloor==null) structureDamageFloor=Blocks.metalFloorDamaged;
         if(steps==null) steps=RuinStep.defaults();
     }
@@ -303,19 +298,19 @@ public class AdvancedRuinFilter extends GenerateFilter {
         public float radius;public Block floor,wall;public boolean removeWall;public int stepMode=2;
         public RuinStep(){}
         public RuinStep(float r,Block f,Block w){radius=r;floor=f;wall=w;}
-        public boolean hasFloor(){return floor!=null&&floor!=Blocks.removeWall;}
-        public boolean preservesFloor(){return floor!=null&&floor==Blocks.removeWall;}
-        public boolean hasWall(){return wall!=null&&wall!=Blocks.removeWall;}
-        public boolean removesWall(){return removeWall||wall!=null&&wall==Blocks.removeWall;}
         public boolean matches(int cx,int cy,int x,int y){
             if(!Float.isFinite(radius)||radius<0f) return false;
             float dx=x-cx,dy=y-cy;
             switch(stepMode){case 0:return Math.sqrt(dx*dx+dy*dy)<=radius;case 1:return Math.abs(dx)+Math.abs(dy)<=radius;default:return Math.max(Math.abs(dx),Math.abs(dy))<=radius;}
         }
+        public boolean preservesFloor(){return floor!=null&&floor==Blocks.air;}
+        public boolean hasFloor(){return floor!=null&&floor!=Blocks.air;}
+        public boolean removesWall(){return removeWall||wall!=null&&wall==Blocks.air;}
+        public boolean hasWall(){return wall!=null&&wall!=Blocks.air;}
         public static RuinStep floor(float r,Block f){return new RuinStep(r,f,null);}
         public static RuinStep wall(float r,Block w){return new RuinStep(r,null,w);}
-        public static RuinStep removeWall(float r){RuinStep s=new RuinStep(r,Blocks.removeWall,null);s.removeWall=true;return s;}
-        public static RuinStep[] defaults(){return new RuinStep[]{floor(6f,Blocks.metalFloor),floor(1f,Blocks.metalFloor3),wall(4f,Blocks.metalWall2),removeWall(3f)};}
+        public static RuinStep removeWall(float r){RuinStep s=new RuinStep(r,Blocks.air,null);s.removeWall=true;return s;}
+        public static RuinStep[] defaults(){return new RuinStep[]{floor(6f,Blocks.metalFloor),floor(1f,Blocks.metalFloor3),wall(4f,Blocks.darkMetal),removeWall(3f)};}
     }
     static final class StructuredRuinLayout{
         static Spec spec(int w,int h,int p){
@@ -488,4 +483,4 @@ public class AdvancedRuinFilter extends GenerateFilter {
             }
         }
     }
-          }
+            }
