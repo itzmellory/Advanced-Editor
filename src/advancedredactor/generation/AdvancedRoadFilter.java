@@ -8,6 +8,7 @@ import mindustry.content.*;
 import mindustry.gen.*;
 import mindustry.maps.filters.*;
 import mindustry.world.*;
+import mindustry.world.blocks.environment.Floor;
 import advancedredactor.ui.ModFilterOptions.*;
 import static advancedredactor.ui.ModFilterOptions.*;
 public class AdvancedRoadFilter extends GenerateFilter{
@@ -61,7 +62,7 @@ public class AdvancedRoadFilter extends GenerateFilter{
         }
         float md=Float.MAX_VALUE;
         for(Segment s:segs)md=Math.min(md,dst(wx,wy,s.x1,s.y1,s.x2,s.y2));
-        boolean wtr=in.floor!=null&&in.floor.isLiquid;
+        boolean wtr=in.floor instanceof Floor&&((Floor)in.floor).isLiquid;
         float rw=wtr?bridgeWidth:roadWidth;
         if(md<=rw){
             in.floor=wtr?bridgeFloor:roadFloor;in.block=Blocks.air;
