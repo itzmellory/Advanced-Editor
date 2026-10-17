@@ -7,6 +7,7 @@ import mindustry.gen.Iconc;
 import mindustry.maps.filters.FilterOption;
 import mindustry.maps.filters.GenerateFilter;
 import mindustry.world.Block;
+import mindustry.world.Tile;
 import mindustry.world.blocks.environment.Floor;
 import mindustry.world.blocks.environment.OreBlock;
 import advancedredactor.ui.ModFilterOptions.*;
@@ -19,7 +20,7 @@ public class AdvancedRuinFilter extends GenerateFilter {
     public Block replaceOverlay=Blocks.coreZone;
     public float centerModeVal=1f,generationModeVal=1f,structurePresetVal=2f;
     public Block structureFloor=Blocks.metalFloor,structureMainFloor=Blocks.darkPanel1;
-    public Block structureWall=Blocks.darkMetal,structureAccentWall=Blocks.metalWall,structureDamageFloor=Blocks.metalFloorDamaged;
+    public Block structureWall=Blocks.darkMetal,structureAccentWall=Blocks.darkMetal,structureDamageFloor=Blocks.metalFloorDamaged;
     public float autoDensity=25f,minCenterSpacing=24f;
     public RuinStep[] steps=RuinStep.defaults();
     public float scl=40f,threshold=0.5f,octaves=3f,falloff=0.5f,tilt=0f,distortScl=10f,distortMag=5f;
@@ -99,7 +100,7 @@ public class AdvancedRuinFilter extends GenerateFilter {
         Block[] gf=new Block[size],gw=new Block[size];
         boolean[] gfb=new boolean[size],gwb=new boolean[size],cf=new boolean[size],cw=new boolean[size];
         Block sw=structureWall==Blocks.air||structureWall.isStatic()?structureWall:Blocks.darkMetal;
-        Block aw=structureAccentWall==Blocks.air||structureAccentWall.isStatic()?structureAccentWall:Blocks.metalWall;
+        Block aw=structureAccentWall==Blocks.air||structureAccentWall.isStatic()?structureAccentWall:Blocks.darkMetal;
         Block dw=structureWall==Blocks.scrapWall?structureWall:structureAccentWall==Blocks.scrapWall?structureAccentWall:Blocks.scrapWall;
         for(int ci=0;ci<centers.size;ci++){
             int cX=centers.get(ci)%w,cY=centers.get(ci)/w;
@@ -246,7 +247,7 @@ public class AdvancedRuinFilter extends GenerateFilter {
         if(structureFloor==null) structureFloor=Blocks.metalFloor;
         if(structureMainFloor==null) structureMainFloor=Blocks.darkPanel1;
         if(structureWall==null) structureWall=Blocks.darkMetal;
-        if(structureAccentWall==null) structureAccentWall=Blocks.metalWall;
+        if(structureAccentWall==null) structureAccentWall=Blocks.darkMetal;
         if(structureDamageFloor==null) structureDamageFloor=Blocks.metalFloorDamaged;
         if(steps==null) steps=RuinStep.defaults();
     }
@@ -483,4 +484,4 @@ public class AdvancedRuinFilter extends GenerateFilter {
             }
         }
     }
-            }
+                                   }
