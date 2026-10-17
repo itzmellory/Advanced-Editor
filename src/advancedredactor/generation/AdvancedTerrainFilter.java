@@ -35,6 +35,38 @@ public class AdvancedTerrainFilter extends GenerateFilter {
         return Iconc.blockStoneWall;
     }
     @Override
+    public void randomize() {
+        seed = Mathf.random(100000);
+        int preset = Mathf.random(0, 4);
+        switch(preset) {
+            case 0:
+                scale = 45f; octaves = 4f; warp = 30f;
+                landCoverage = 0.35f; wallDensity = 0.35f; edgeFalloff = 0.4f;
+                waterCoverage = 0.25f; biomeScale = 60f;
+                break;
+            case 1:
+                scale = 90f; octaves = 5f; warp = 15f;
+                landCoverage = 0.7f; wallDensity = 0.45f; edgeFalloff = 0.8f;
+                waterCoverage = 0.15f; biomeScale = 100f;
+                break;
+            case 2:
+                scale = 110f; octaves = 3f; warp = 65f;
+                landCoverage = 0.55f; wallDensity = 0.65f; edgeFalloff = 0.6f;
+                waterCoverage = 0.2f; biomeScale = 80f;
+                break;
+            case 3:
+                scale = 30f; octaves = 6f; warp = 10f;
+                landCoverage = 0.5f; wallDensity = 0.4f; edgeFalloff = 0.9f;
+                waterCoverage = 0.1f; biomeScale = 50f;
+                break;
+            case 4:
+                scale = 70f; octaves = 4f; warp = 20f;
+                landCoverage = 0.6f; wallDensity = 0.3f; edgeFalloff = 0.5f;
+                waterCoverage = 0.45f; biomeScale = 90f;
+                break;
+        }
+    }
+    @Override
     public FilterOption[] options() {
         return new FilterOption[]{
             new BlockOption("floor", () -> floor, b -> floor = b, floorsOnly),
@@ -46,9 +78,9 @@ public class AdvancedTerrainFilter extends GenerateFilter {
             new SliderOption("scale", () -> scale, f -> scale = f, 10f, 200f, 1f),
             new SliderOption("octaves", () -> octaves, f -> octaves = f, 1f, 8f, 1f),
             new SliderOption("warp", () -> warp, f -> warp = f, 0f, 100f, 1f),
-            new SliderOption("landCoverage", () -> landCoverage, f -> landCoverage = f, 0.1f, 1f, 0.02f),
+            new SliderOption("landCoverage", () -> landCoverage, f -> landCoverage = f, 0.1f, 1.5f, 0.05f),
             new SliderOption("wallDensity", () -> wallDensity, f -> wallDensity = f, 0f, 1f, 0.02f),
-            new SliderOption("edgeFalloff", () -> edgeFalloff, f -> edgeFalloff = f, 0f, 1.5f, 0.05f),
+            new SliderOption("edgeFalloff", () -> edgeFalloff, f -> edgeFalloff = f, 0f, 2f, 0.05f),
             new ToggleOption("useBiomes", () -> useBiomes, b -> useBiomes = b),
             new SliderOption("biomeScale", () -> biomeScale, f -> biomeScale = f, 10f, 200f, 1f),
             new ToggleOption("useWater", () -> useWater, b -> useWater = b),
@@ -68,8 +100,8 @@ public class AdvancedTerrainFilter extends GenerateFilter {
             wy += (float) Simplex.noise2d(seed + 23, 3, 0.5f, 1f / scale, in.x, in.y) * warp;
         }
         float baseNoise = (float) Simplex.noise2d(seed, (int) octaves, 0.5f, 1f / scale, wx, wy);
-        float landVal = baseNoise - (dist * edgeFalloff);
-        if (landVal < (1.2f - landCoverage * 1.5f)) {
+        float landVal = baseNoise + landCoverage - (dist * edgeFalloff);
+        if (landVal < 0.5f) {
             in.block = Blocks.air;
             if (clearVoid) in.floor = Blocks.air;
             return;
@@ -83,13 +115,14 @@ public class AdvancedTerrainFilter extends GenerateFilter {
         }
         in.floor = selectedFloor;
         float wallNoise = (float) Simplex.noise2d(seed + 37, (int) octaves, 0.5f, 1f / (scale * 0.8f), wx, wy);
-        if (wallNoise > (1.2f - wallDensity * 1.5f)) in.block = wall;
-        else {
+        if (wallNoise < wallDensity) {
+            in.block = wall;
+        } else {
             in.block = Blocks.air;
             if (useWater) {
                 float waterNoise = (float) Simplex.noise2d(seed + 313, 3, 0.5f, 1f / scale, wx, wy);
-                if (waterNoise > (1.2f - waterCoverage * 1.5f)) {
-                    in.floor = (waterNoise > (1.2f - waterCoverage * 1.2f)) ? deepwater : water;
+                if (waterNoise < waterCoverage) {
+                    in.floor = (waterNoise < waterCoverage * 0.6f) ? deepwater : water;
                 }
             }
         }
