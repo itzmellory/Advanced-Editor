@@ -72,7 +72,7 @@ public class AdvancedTerrainFilter extends GenerateFilter {
     }
 
     @Override
-    public void apply() {
+    public void apply(GenerateInput in) {
         float wx = in.x, wy = in.y;
 
         if (warpStrength > 0.01f) {
@@ -125,4 +125,4 @@ public class AdvancedTerrainFilter extends GenerateFilter {
             }
         }
     }
-    }
+}
