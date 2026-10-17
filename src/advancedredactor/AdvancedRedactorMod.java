@@ -22,6 +22,7 @@ public class AdvancedRedactorMod extends Mod {
             Seq<Prov<GenerateFilter>> list = Seq.with(current);
             list.add(AdvancedTerrainFilter::new);
             list.add(AdvancedWaterFilter::new);
+            list.add(AdvancedRuinFilter::new);
             Reflect.set(Maps.class, "allFilterTypes", list.toArray(Prov.class));
         } catch (Exception ignored) {}
     }
