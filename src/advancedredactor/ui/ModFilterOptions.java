@@ -1,12 +1,12 @@
 package advancedredactor.ui;
 
 import arc.func.*;
+import arc.scene.Element;
 import arc.scene.ui.*;
 import arc.scene.ui.layout.*;
 import arc.util.*;
 import mindustry.*;
 import mindustry.content.*;
-import mindustry.gen.*;
 import mindustry.maps.filters.*;
 import mindustry.ui.*;
 import mindustry.ui.dialogs.*;
@@ -15,7 +15,7 @@ import mindustry.world.*;
 public class ModFilterOptions {
 
     public static final Boolf<Block> floorsOnly = b -> b.isFloor() && !b.isOverlay() && b != Blocks.air;
-    public static final Boolf<Block> wallsOnly = b -> !b.isFloor() && b.synthetic() == false && b != Blocks.air;
+    public static final Boolf<Block> wallsOnly = b -> !b.isFloor() && !b.synthetic() && b != Blocks.air;
     public static final Boolf<Block> oresOnly = b -> b.isOverlay() && b != Blocks.air;
 
     public static class SliderOption extends FilterOption {
@@ -35,8 +35,14 @@ public class ModFilterOptions {
 
         @Override
         public void build(Table table) {
-            table.add("@filter.option." + name).left().padRight(10f);
+            Element base = table.add("@filter.option." + name).growX().left().style(Styles.outlineLabel).get();
+            if (base instanceof Label) {
+                ((Label) base).setWrap(true);
+            }
+
             Label valueLabel = new Label("", Styles.outlineLabel);
+            valueLabel.setAlignment(Align.right);
+
             Slider slider = new Slider(min, max, step, false);
             slider.setValue(getter.get());
 
@@ -56,9 +62,8 @@ public class ModFilterOptions {
                 if (changed != null) changed.run();
             });
 
-            table.add(slider).growX().padRight(10f);
-            table.add(valueLabel).width(50f).right();
-            table.row();
+            table.add(valueLabel).right().padLeft(4f).row();
+            table.add(slider).colspan(2).growX().padBottom(4f).row();
         }
     }
 
@@ -75,12 +80,14 @@ public class ModFilterOptions {
 
         @Override
         public void build(Table table) {
-            table.add("@filter.option." + name).left().padRight(10f);
+            Element base = table.add("@filter.option." + name).growX().left().style(Styles.outlineLabel).get();
+            if (base instanceof Label) {
+                ((Label) base).setWrap(true);
+            }
             table.check("", getter.get(), val -> {
                 setter.get(val);
                 if (changed != null) changed.run();
-            }).right().colspan(2);
-            table.row();
+            }).right().padBottom(4f).row();
         }
     }
 
@@ -99,7 +106,6 @@ public class ModFilterOptions {
 
         @Override
         public void build(Table table) {
-            table.add("@filter.option." + name).left().padRight(10f);
             table.button(b -> b.image(supplier.get().uiIcon).size(24f).update(i -> i.setDrawable(supplier.get().uiIcon)), () -> {
                 BaseDialog dialog = new BaseDialog("@filter.option." + name);
                 dialog.cont.pane(t -> {
@@ -116,7 +122,12 @@ public class ModFilterOptions {
                 }).size(420f, 340f);
                 dialog.addCloseButton();
                 dialog.show();
-            }).size(40f).right().colspan(2);
+            }).size(36f).pad(2f).left();
+
+            Element lbl = table.add("@filter.option." + name).growX().left().padLeft(4f).style(Styles.outlineLabel).get();
+            if (lbl instanceof Label) {
+                ((Label) lbl).setWrap(true);
+            }
             table.row();
         }
     }
