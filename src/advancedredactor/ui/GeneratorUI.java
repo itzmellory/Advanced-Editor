@@ -7,6 +7,7 @@ import arc.struct.*;
 import arc.util.*;
 import mindustry.*;
 import mindustry.editor.*;
+import mindustry.game.EventType.*;
 import mindustry.gen.*;
 import mindustry.maps.filters.*;
 import mindustry.ui.*;
