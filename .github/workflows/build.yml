@@ -3,6 +3,7 @@ name: Build and Release
 on:
   push:
     branches: [ "main", "master" ]
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -19,12 +20,11 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    - run: |
-        chmod +x gradlew
-        ./gradlew deploy
+    - run: sh gradlew deploy
 
     - uses: softprops/action-gh-release@v2
       with:
         tag_name: v1.0.${{ github.run_number }}
         name: Release v1.0.${{ github.run_number }}
         files: build/libs/AdvancedRedactor.jar
+        make_latest: true
