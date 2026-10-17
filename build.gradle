@@ -1,12 +1,19 @@
-apply plugin: "java"
+plugins {
+    id 'java'
+}
 
-version '1.0'
-sourceCompatibility = 8
-targetCompatibility = 8
+version = '1.0'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+sourceSets.main.java.srcDirs = ["src"]
 
 repositories {
     mavenCentral()
-    maven { url 'https://www.jitpack.io' }
+    maven { url "https://www.jitpack.io" }
 }
 
 dependencies {
@@ -14,17 +21,19 @@ dependencies {
     compileOnly "com.github.Anuken.Mindustry:core:v160"
 }
 
-jar {
+tasks.named("jar") {
     archiveFileName = "${project.name}Desktop.jar"
 }
 
-task jarAndroid(type: Jar) {
-    dependsOn jar
+tasks.register("jarAndroid", Jar) {
+    dependsOn tasks.named("jar")
     archiveFileName = "${project.name}.jar"
-
+    
+    def libsDir = layout.buildDirectory.dir("libs").get().asFile
+    
     doLast {
-        exec {
-            commandLine "d8", "--min-api", "24", "--output", "${buildDir}/libs/${project.name}.jar", "${buildDir}/libs/${project.name}Desktop.jar"
+        project.exec {
+            commandLine "d8", "--min-api", "24", "--output", "${libsDir}/${project.name}.jar", "${libsDir}/${project.name}Desktop.jar"
         }
     }
 }
