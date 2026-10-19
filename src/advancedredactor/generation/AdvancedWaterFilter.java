@@ -256,4 +256,4 @@ public class AdvancedWaterFilter extends GenerateFilter{
         }
         @Override public int hashCode(){return w*31+h*31+s*31+cov;}
     }
-                    }
+}
