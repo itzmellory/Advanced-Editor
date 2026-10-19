@@ -384,7 +384,7 @@ public class AdvancedRuinFilter extends GenerateFilter{
     public static class StepsEditOption extends FilterOption{
         final AdvancedRuinFilter f;public StepsEditOption(AdvancedRuinFilter f){this.f=f;}
         @Override public void build(Table t){
-            t.button("@filter.option.ruinsteps",Styles.flatt,this::openDialog).colspan(2).growX().height(36f).padVertical(2f).row();
+            t.button("@filter.option.ruinsteps",Styles.flatt,this::openDialog).colspan(2).growX().height(36f).padTop(2f).padBottom(2f).row();
         }
         private void openDialog(){
             BaseDialog d=new BaseDialog("@filter.option.ruinsteps");
@@ -704,4 +704,4 @@ public class AdvancedRuinFilter extends GenerateFilter{
             }
         }
     }
-        }
+                                                        }
