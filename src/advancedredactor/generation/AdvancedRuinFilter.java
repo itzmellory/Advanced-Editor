@@ -357,34 +357,34 @@ public class AdvancedRuinFilter extends GenerateFilter{
     public static class CenterModeOption extends FilterOption{
         final AdvancedRuinFilter f;public CenterModeOption(AdvancedRuinFilter f){this.f=f;}
         @Override public void build(Table t){
-            t.add("@filter.option.centermode").growX().left().style(Styles.outlineLabel);
+            t.add("@filter.option.centermode").width(160f).left().style(Styles.outlineLabel).wrap();
             t.button(b->b.label(()->Core.bundle.get("filter.option.centermode."+f.centerMode.name(),f.centerMode.name())),Styles.flatt,()->{
                 f.centerMode=f.centerMode.next();if(changed!=null)changed.run();
-            }).size(110f,32f).right().row();
+            }).size(130f,32f).right().row();
         }
     }
     public static class GenerationModeOption extends FilterOption{
         final AdvancedRuinFilter f;public GenerationModeOption(AdvancedRuinFilter f){this.f=f;}
         @Override public void build(Table t){
-            t.add("@filter.option.generationmode").growX().left().style(Styles.outlineLabel);
+            t.add("@filter.option.generationmode").width(160f).left().style(Styles.outlineLabel).wrap();
             t.button(b->b.label(()->Core.bundle.get("filter.option.generationmode."+f.generationMode.name(),f.generationMode.name())),Styles.flatt,()->{
                 f.generationMode=f.generationMode.next();if(changed!=null)changed.run();
-            }).size(110f,32f).right().row();
+            }).size(130f,32f).right().row();
         }
     }
     public static class StructurePresetOption extends FilterOption{
         final AdvancedRuinFilter f;public StructurePresetOption(AdvancedRuinFilter f){this.f=f;}
         @Override public void build(Table t){
-            t.add("@filter.option.structurepreset").growX().left().style(Styles.outlineLabel);
+            t.add("@filter.option.structurepreset").width(160f).left().style(Styles.outlineLabel).wrap();
             t.button(b->b.label(()->Core.bundle.get("filter.option.structurepreset."+f.structurePreset.name(),f.structurePreset.name())),Styles.flatt,()->{
                 f.structurePreset=f.structurePreset.next();if(changed!=null)changed.run();
-            }).size(110f,32f).right().row();
+            }).size(130f,32f).right().row();
         }
     }
     public static class StepsEditOption extends FilterOption{
         final AdvancedRuinFilter f;public StepsEditOption(AdvancedRuinFilter f){this.f=f;}
         @Override public void build(Table t){
-            t.button("@filter.option.ruinsteps",Styles.flatt,this::openDialog).colspan(2).growX().height(36f).padTop(2f).padBottom(2f).row();
+            t.button("@filter.option.ruinsteps",Styles.flatt,this::openDialog).colspan(2).width(200f).height(36f).padTop(2f).padBottom(2f).row();
         }
         private void openDialog(){
             BaseDialog d=new BaseDialog("@filter.option.ruinsteps");
@@ -396,14 +396,14 @@ public class AdvancedRuinFilter extends GenerateFilter{
                 for(int idx=0;idx<f.steps.length;idx++){
                     final int i=idx;final RuinStep st=f.steps[i];
                     Table row=new Table(Tex.button);row.margin(6f);
-                    row.add("#"+(i+1)).width(30f);
+                    row.add("#"+(i+1)).width(20f);
                     row.button(b->b.image(st.floor==null?Blocks.air.uiIcon:st.floor.uiIcon).size(24f),()->pickBlock(floorsOptional,b->{st.floor=b;rebuild[0].run();if(changed!=null)changed.run();})).size(36f).pad(2f);
                     row.button(b->b.image(st.removeWall?Icon.cancel:new arc.scene.style.TextureRegionDrawable(st.wall==null?Blocks.air.uiIcon:st.wall.uiIcon)).size(24f),()->pickBlock(b->b==Blocks.air||wallsOptional.get(b),b->{if(b==Blocks.air){st.wall=null;st.removeWall=true;}else{st.wall=b;st.removeWall=false;}rebuild[0].run();if(changed!=null)changed.run();})).size(36f).pad(2f);
-                    row.button(st.stepMode.name(),Styles.flatt,()->{st.stepMode=st.stepMode.next();rebuild[0].run();if(changed!=null)changed.run();}).size(90f,32f).pad(2f);
+                    row.button(st.stepMode.name(),Styles.flatt,()->{st.stepMode=st.stepMode.next();rebuild[0].run();if(changed!=null)changed.run();}).size(80f,32f).pad(2f);
                     Slider sl=new Slider(0f,32f,0.5f,false);sl.setValue(st.radius);
                     Label rl=new Label(Strings.fixed(st.radius,1));
                     sl.moved(v->{st.radius=v;rl.setText(Strings.fixed(v,1));if(changed!=null)changed.run();});
-                    row.add(sl).width(110f).pad(2f);row.add(rl).width(35f);
+                    row.add(sl).width(70f).pad(2f);row.add(rl).width(30f);
                     row.button(Icon.trash,Styles.flati,()->{
                         ArrayList<RuinStep> l=new ArrayList<>(Arrays.asList(f.steps));
                         l.remove(i);f.steps=l.toArray(new RuinStep[0]);
@@ -413,7 +413,7 @@ public class AdvancedRuinFilter extends GenerateFilter{
                 }
             };
             rebuild[0].run();
-            d.cont.pane(list).width(520f).height(340f).row();
+            d.cont.pane(list).size(Math.min(Core.graphics.getWidth()*0.95f,520f),340f).row();
             d.cont.table(bt->{
                 bt.button("@add",Icon.add,()->{
                     ArrayList<RuinStep> l=new ArrayList<>(Arrays.asList(f.steps));
@@ -437,7 +437,7 @@ public class AdvancedRuinFilter extends GenerateFilter{
                     t.button(btn->btn.image(b.uiIcon).size(28f),Styles.flati,()->{cons.get(b);bd.hide();}).size(38f).pad(2f);
                     if(++c%10==0)t.row();
                 }
-            }).size(440f,320f);
+            }).size(Math.min(Core.graphics.getWidth()*0.9f,440f),320f);
             bd.addCloseButton();bd.show();
         }
     }
@@ -704,4 +704,4 @@ public class AdvancedRuinFilter extends GenerateFilter{
             }
         }
     }
-                                                        }
+            }
