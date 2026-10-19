@@ -93,7 +93,7 @@ public class MUDialogs{
             for(int x=0;x<Vars.world.width();x++)for(int y=0;y<Vars.world.height();y++){
                 Tile t=Vars.world.tile(x,y);if(t!=null)old.add(TileData.fromSafe(t));
             }
-            Vars.editor.resize(w,h);
+            Vars.editor.resize(w,h,0,0);
             for(TileData td:old){
                 Tile t=Vars.world.tile(td.x+ox[0],td.y+oy[0]);
                 if(t!=null)td.applyTo(t);
