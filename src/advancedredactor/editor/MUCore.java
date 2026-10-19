@@ -18,6 +18,7 @@ import mindustry.*;
 import mindustry.content.*;
 import mindustry.game.*;
 import mindustry.gen.*;
+import mindustry.graphics.*;
 import mindustry.ui.*;
 import mindustry.world.*;
 import mindustry.world.blocks.environment.*;
@@ -129,7 +130,7 @@ public class MUCore{
             boolean center=t.build!=null&&t.build.tile==t;
             Block blk=t.block();
             if(t.build!=null&&!center)blk=Blocks.air;
-            return new TileData(t.x,t.y,t.floor(),blk,t.overlay(),(short)(t.build!=null?t.build.rotation:t.rotation()),(short)t.getTeamID(),t.data,center?t.build.config():null);
+            return new TileData(t.x,t.y,t.floor(),blk,t.overlay(),(short)(t.build!=null?t.build.rotation:0),(short)t.getTeamID(),t.data,center?t.build.config():null);
         }
         public void applyTo(Tile t){
             if(t==null)return;
@@ -164,7 +165,6 @@ public class MUCore{
         public static void refreshMap(){
             if(Vars.renderer!=null&&Vars.renderer.blocks!=null){
                 Vars.renderer.blocks.floor.clearTiles();
-                Vars.renderer.blocks.updatePre();
             }
             if(Vars.editor!=null&&Vars.editor.renderer!=null)Vars.editor.renderer.updateAll();
         }
@@ -245,7 +245,7 @@ public class MUCore{
             titleBar.addListener(new InputListener(){
                 @Override public boolean touchDown(InputEvent event,float x,float y,int pointer,KeyCode button){dragX=x;dragY=y;toFront();return true;}
                 @Override public void touchDragged(InputEvent event,float x,float y,int pointer){
-                    setPosition(Mathf.clamp(getX()+x-dragX,0,Core.graphics.getWidth()-getWidth()),Mathf.clamp(getY()+y-dragY,0,Core.graphics.getHeight()-getHeight()));
+                    setPosition(Mathf.clamp(Window.this.x+x-dragX,0,Core.graphics.getWidth()-getWidth()),Mathf.clamp(Window.this.y+y-dragY,0,Core.graphics.getHeight()-getHeight()));
                 }
             });
             rebuildWindow();
@@ -257,4 +257,4 @@ public class MUCore{
             pack();
         }
     }
-                }
+}
