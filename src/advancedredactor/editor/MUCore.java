@@ -56,7 +56,7 @@ public class MUCore{
         public boolean canUndo(){return index>=0;}
         public boolean canRedo(){return index<stack.size-1;}
         public void clear(){stack.clear();index=-1;}
-        public static void refreshMap(){if(Vars.renderer!=null&&Vars.renderer.blocks!=null)Vars.renderer.blocks.floor.reload();}
+        public static void refreshMap(){if(Vars.renderer!=null&&Vars.renderer.blocks!=null)Vars.renderer.blocks.floor.clearTiles();}
     }
     public static class BlocksSelectionOperation implements EditorOperation{
         public final ChunkedGridBits before,after;
@@ -81,4 +81,4 @@ public class MUCore{
         @Override public void undo(){for(TileData td:before.values())td.applyTo(Vars.world.tile(td.x,td.y));}
         @Override public void redo(){for(TileData td:after.values())td.applyTo(Vars.world.tile(td.x,td.y));}
     }
-              }
+}
