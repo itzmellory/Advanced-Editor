@@ -109,7 +109,6 @@ public class MUDialogs{
         t.check("Hide Banned Blocks",r.hideBannedBlocks,b->r.hideBannedBlocks=b).colspan(2).row();
         t.check("Wait Wave Enemies",r.waitEnemies,b->r.waitEnemies=b).colspan(2).row();
         t.check("Show Spawns",r.showSpawns,b->r.showSpawns=b).colspan(2).row();
-        t.check("Random Wave AI",r.randomWaveAI,b->r.randomWaveAI=b).colspan(2).row();
         t.check("Static Fog",r.staticFog,b->r.staticFog=b).colspan(2).row();
         t.add("Solar Multiplier:");t.field(String.valueOf(r.solarMultiplier),TextField.TextFieldFilter.floatsOnly,s->r.solarMultiplier=Strings.parseFloat(s,r.solarMultiplier)).width(140f).row();
         t.add("Drag Multiplier:");t.field(String.valueOf(r.dragMultiplier),TextField.TextFieldFilter.floatsOnly,s->r.dragMultiplier=Strings.parseFloat(s,r.dragMultiplier)).width(140f).row();
@@ -266,4 +265,4 @@ public class MUDialogs{
         d.cont.pane(p->p.add(out).growX().left()).size(Math.min(Core.graphics.getWidth()*0.9f,500f),140f);
         d.addCloseButton();d.show();
     }
-                                     }
+                                                }
