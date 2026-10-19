@@ -29,13 +29,40 @@ public class MUCore{
     @Retention(RetentionPolicy.RUNTIME)public @interface RequireScl{}
     public static class MUReflect{
         public static Object get(Object obj,String name){
-            try{Field f=findField(obj.getClass(),name);f.setAccessible(true);return f.get(obj);}catch(Exception e){return null;}
+            if(obj==null)return null;
+            try{Field f=findField(obj.getClass(),name);if(f!=null){f.setAccessible(true);return f.get(obj);}}catch(Throwable ignored){}
+            return null;
         }
         public static void set(Object obj,String name,Object val){
-            try{Field f=findField(obj.getClass(),name);f.setAccessible(true);f.set(obj,val);}catch(Exception ignored){}
+            if(obj==null)return;
+            try{Field f=findField(obj.getClass(),name);if(f!=null){f.setAccessible(true);f.set(obj,val);}}catch(Throwable ignored){}
+        }
+        public static boolean hasField(Class<?> c,String name){return findField(c,name)!=null;}
+        public static boolean getBool(Object obj,String name,boolean def){
+            Object v=get(obj,name);return v instanceof Boolean?(Boolean)v:def;
+        }
+        public static float getFloat(Object obj,String name,float def){
+            Object v=get(obj,name);return v instanceof Number?((Number)v).floatValue():def;
+        }
+        public static int getInt(Object obj,String name,int def){
+            Object v=get(obj,name);return v instanceof Number?((Number)v).intValue():def;
+        }
+        public static Object invoke(Object obj,String name){
+            if(obj==null)return null;
+            try{
+                Method m=findMethod(obj.getClass(),name);
+                if(m!=null){m.setAccessible(true);return m.invoke(obj);}
+            }catch(Throwable ignored){}
+            return null;
         }
         public static Field findField(Class<?> c,String name){
-            while(c!=null){try{return c.getDeclaredField(name);}catch(Exception e){c=c.getSuperclass();}}return null;
+            while(c!=null){try{return c.getDeclaredField(name);}catch(Throwable e){c=c.getSuperclass();}}return null;
+        }
+        public static Method findMethod(Class<?> c,String name){
+            while(c!=null){
+                for(Method m:c.getDeclaredMethods())if(m.getName().equals(name)&&m.getParameterTypes().length==0)return m;
+                c=c.getSuperclass();
+            }return null;
         }
         public static void copyFields(Object from,Object to){
             if(from==null||to==null)return;
@@ -43,7 +70,7 @@ public class MUCore{
             while(c!=null&&c!=Object.class){
                 for(Field f:c.getDeclaredFields()){
                     if(Modifier.isStatic(f.getModifiers())||f.isAnnotationPresent(NoCopy.class))continue;
-                    try{f.setAccessible(true);Field tf=findField(to.getClass(),f.getName());if(tf!=null&&!Modifier.isFinal(tf.getModifiers())){tf.setAccessible(true);tf.set(to,f.get(from));}}catch(Exception ignored){}
+                    try{f.setAccessible(true);Field tf=findField(to.getClass(),f.getName());if(tf!=null&&!Modifier.isFinal(tf.getModifiers())){tf.setAccessible(true);tf.set(to,f.get(from));}}catch(Throwable ignored){}
                 }
                 c=c.getSuperclass();
             }
@@ -55,8 +82,8 @@ public class MUCore{
     }
     public static class MUJson{
         public static final Json json=new Json();
-        public static String toJson(Object o){try{return json.toJson(o);}catch(Exception e){return "{}";}}
-        public static <T> T fromJson(Class<T> t,String s){try{return json.fromJson(t,s);}catch(Exception e){return null;}}
+        public static String toJson(Object o){try{return json.toJson(o);}catch(Throwable e){return "{}";}}
+        public static <T> T fromJson(Class<T> t,String s){try{return json.fromJson(t,s);}catch(Throwable e){return null;}}
     }
     public static class JSManager{
         public static final Seq<String> history=new Seq<>();
@@ -163,10 +190,13 @@ public class MUCore{
         public boolean canRedo(){return index<stack.size-1;}
         public void clear(){stack.clear();index=-1;}
         public static void refreshMap(){
-            if(Vars.renderer!=null&&Vars.renderer.blocks!=null){
-                Vars.renderer.blocks.floor.clearTiles();
-            }
-            if(Vars.editor!=null&&Vars.editor.renderer!=null)Vars.editor.renderer.updateAll();
+            try{if(Vars.editor!=null&&Vars.editor.renderer!=null)Vars.editor.renderer.updateAll();}catch(Throwable ignored){}
+            try{
+                if(Vars.renderer!=null&&Vars.renderer.blocks!=null&&Vars.renderer.blocks.floor!=null){
+                    MUReflect.invoke(Vars.renderer.blocks.floor,"clearTiles");
+                    MUReflect.invoke(Vars.renderer.blocks.floor,"reload");
+                }
+            }catch(Throwable ignored){}
         }
     }
     public static class BlocksSelectionOperation implements EditorOperation{
