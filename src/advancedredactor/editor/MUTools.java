@@ -131,7 +131,7 @@ public class MUTools{
         if(t.block()!=Blocks.air&&t.block()!=Blocks.cliff){
             Vars.editor.drawBlock=t.block();
             Vars.editor.drawTeam=t.team();
-            Vars.editor.rotation=t.build!=null?t.build.rotation:t.rotation();
+            Vars.editor.rotation=t.build!=null?t.build.rotation:0;
         }else if(t.overlay()!=Blocks.air)Vars.editor.drawBlock=t.overlay();
         else Vars.editor.drawBlock=t.floor();
     }
