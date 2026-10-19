@@ -4,6 +4,7 @@ import arc.graphics.*;
 import arc.graphics.g2d.*;
 import arc.input.*;
 import arc.math.geom.*;
+import arc.scene.ui.ScrollPane;
 import arc.scene.ui.layout.*;
 import arc.struct.*;
 import arc.util.*;
@@ -39,8 +40,7 @@ public class MUEditorManager{
         if(selection.width!=Vars.world.width()||selection.height!=Vars.world.height()){
             selection=new ChunkedGridBits(Math.max(1,Vars.world.width()),Math.max(1,Vars.world.height()));
         }
-        handleHotkeys();
-        handleMouse();
+        handleHotkeys();handleMouse();
     }
     private static void handleHotkeys(){
         if(Core.scene.hasField())return;
@@ -50,17 +50,14 @@ public class MUEditorManager{
         if(ctrl&&Core.input.keyTap(KeyCode.c)){MUTools.copySelection();Vars.ui.showInfoToast("Copied "+clipboard.size+" tiles",1.5f);}
         if(ctrl&&Core.input.keyTap(KeyCode.x)){MUTools.cutSelection();Vars.ui.showInfoToast("Cut selection",1.5f);}
         if(ctrl&&Core.input.keyTap(KeyCode.v)){
-            Vec2 m=Core.input.mouseWorld();
-            MUTools.pasteClipboard((int)(m.x/8f),(int)(m.y/8f));
+            Vec2 m=Core.input.mouseWorld();MUTools.pasteClipboard((int)(m.x/8f),(int)(m.y/8f));
         }
     }
     private static void handleMouse(){
         if(MUTools.currentTool==ToolMode.none||Core.scene.hasMouse())return;
         Vec2 m=Core.input.mouseWorld();
         int tx=(int)(m.x/8f),ty=(int)(m.y/8f);
-        if(MUTools.currentTool==ToolMode.pick&&Core.input.keyTap(KeyCode.mouseLeft)){
-            MUTools.pickTile(tx,ty);return;
-        }
+        if(MUTools.currentTool==ToolMode.pick&&Core.input.keyTap(KeyCode.mouseLeft)){MUTools.pickTile(tx,ty);return;}
         if(MUTools.currentTool==ToolMode.selectRect){
             if(Core.input.keyTap(KeyCode.mouseLeft)){dragStartX=tx;dragStartY=ty;}
             if(!Core.input.keyDown(KeyCode.mouseLeft)&&dragStartX!=-1){
@@ -83,44 +80,42 @@ public class MUEditorManager{
         if(!active||selection.isEmpty())return;
         Draw.color(Color.cyan,0.28f);
         int w=Vars.world.width(),h=Vars.world.height();
-        for(int x=0;x<w;x++)for(int y=0;y<h;y++){
-            if(selection.get(x,y))Fill.rect(x*8f+4f,y*8f+4f,8f,8f);
-        }
+        for(int x=0;x<w;x++)for(int y=0;y<h;y++)if(selection.get(x,y))Fill.rect(x*8f+4f,y*8f+4f,8f,8f);
         Draw.reset();
     }
     private static void buildPanel(){
         if(panel!=null)panel.remove();
-        panel=new Table(Styles.black6);
-        panel.top().right().margin(6f);
+        panel=new Table(Styles.black6);panel.top().right().margin(6f);
         Table header=new Table();
         header.add("[accent]Mapping Utilities[]").growX().left().padRight(8f);
         header.button(minimized?"+":"-",Styles.flatt,()->{minimized=!minimized;buildPanel();}).size(28f,28f);
         panel.add(header).growX().row();
         if(!minimized){
-            Table tools=new Table();
-            tools.defaults().size(85f,32f).pad(1.5f);
-            tools.button("@editor.mu.tool.none",Styles.flatt,()->MUTools.currentTool=ToolMode.none).update(b->b.setChecked(MUTools.currentTool==ToolMode.none));
-            tools.button("@editor.mu.tool.rect",Styles.flatt,()->MUTools.currentTool=ToolMode.brushRect).update(b->b.setChecked(MUTools.currentTool==ToolMode.brushRect)).row();
-            tools.button("@editor.mu.tool.circle",Styles.flatt,()->MUTools.currentTool=ToolMode.brushCircle).update(b->b.setChecked(MUTools.currentTool==ToolMode.brushCircle));
-            tools.button("@editor.mu.tool.select",Styles.flatt,()->MUTools.currentTool=ToolMode.selectRect).update(b->b.setChecked(MUTools.currentTool==ToolMode.selectRect)).row();
-            tools.button("@editor.mu.tool.pick",Styles.flatt,()->MUTools.currentTool=ToolMode.pick).update(b->b.setChecked(MUTools.currentTool==ToolMode.pick));
-            tools.button("@editor.mu.clear",Styles.flatt,()->selection.clearAll()).row();
-            tools.button("@editor.mu.undo",Styles.flatt,()->history.undo()).disabled(b->!history.canUndo());
-            tools.button("@editor.mu.redo",Styles.flatt,()->history.redo()).disabled(b->!history.canRedo()).row();
-            tools.button("@editor.mu.copy",Styles.flatt,MUTools::copySelection);
-            tools.button("@editor.mu.paste",Styles.flatt,()->{Vec2 m=Core.input.mouseWorld();MUTools.pasteClipboard((int)(m.x/8f),(int)(m.y/8f));}).row();
-            tools.button("@editor.mu.cut",Styles.flatt,MUTools::cutSelection);
-            tools.button("@editor.mu.fill",Styles.flatt,MUTools::fillSelection).row();
-            tools.button("@editor.mu.cliffs",Styles.flatt,MUTools::generateAutoCliffs).colspan(2).growX().row();
-            tools.button("@editor.mu.banned",Styles.flatt,MUDialogs::showBannedContentDialog);
-            tools.button("@editor.mu.planetbg",Styles.flatt,MUDialogs::showPlanetBackgroundDialog).row();
-            tools.button("@editor.mu.resize",Styles.flatt,MUDialogs::showResizeDialog);
-            tools.button("@editor.mu.uiexplorer",Styles.flatt,MUDialogs::showUIExplorerDialog).row();
-            tools.button("@editor.mu.js",Styles.flatt,MUDialogs::showJSConsoleDialog).colspan(2).growX().row();
-            panel.add(tools).row();
+            Table t=new Table();t.defaults().size(85f,32f).pad(1.5f);
+            t.button("@editor.mu.tool.none",Styles.flatt,()->MUTools.currentTool=ToolMode.none).update(b->b.setChecked(MUTools.currentTool==ToolMode.none));
+            t.button("@editor.mu.tool.rect",Styles.flatt,()->MUTools.currentTool=ToolMode.brushRect).update(b->b.setChecked(MUTools.currentTool==ToolMode.brushRect)).row();
+            t.button("@editor.mu.tool.circle",Styles.flatt,()->MUTools.currentTool=ToolMode.brushCircle).update(b->b.setChecked(MUTools.currentTool==ToolMode.brushCircle));
+            t.button("@editor.mu.tool.select",Styles.flatt,()->MUTools.currentTool=ToolMode.selectRect).update(b->b.setChecked(MUTools.currentTool==ToolMode.selectRect)).row();
+            t.button("@editor.mu.tool.pick",Styles.flatt,()->MUTools.currentTool=ToolMode.pick).update(b->b.setChecked(MUTools.currentTool==ToolMode.pick));
+            t.button("@editor.mu.clear",Styles.flatt,()->selection.clearAll()).row();
+            t.button("@editor.mu.undo",Styles.flatt,()->history.undo()).disabled(b->!history.canUndo());
+            t.button("@editor.mu.redo",Styles.flatt,()->history.redo()).disabled(b->!history.canRedo()).row();
+            t.button("@editor.mu.copy",Styles.flatt,MUTools::copySelection);
+            t.button("@editor.mu.paste",Styles.flatt,()->{Vec2 m=Core.input.mouseWorld();MUTools.pasteClipboard((int)(m.x/8f),(int)(m.y/8f));}).row();
+            t.button("@editor.mu.cut",Styles.flatt,MUTools::cutSelection);
+            t.button("@editor.mu.fill",Styles.flatt,MUTools::fillSelection).row();
+            t.add("Brush Size:").colspan(2).left().padTop(4f).row();
+            t.slider(1f,50f,1f,MUTools.brushSize,s->MUTools.brushSize=(int)s).colspan(2).width(160f).row();
+            t.check("Replace Mode",MUTools.replaceMode,b->MUTools.replaceMode=b).colspan(2).left().padBottom(4f).row();
+            t.button("@editor.mu.cliffs",Styles.flatt,MUTools::generateAutoCliffs).colspan(2).growX().row();
+            t.button("@editor.mu.advrules",Styles.flatt,MUDialogs::showAdvRulesDialog).colspan(2).growX().row();
+            t.button("@editor.mu.banned",Styles.flatt,MUDialogs::showBannedContentDialog);
+            t.button("@editor.mu.planetbg",Styles.flatt,MUDialogs::showPlanetBackgroundDialog).row();
+            t.button("@editor.mu.resize",Styles.flatt,MUDialogs::showResizeDialog);
+            t.button("@editor.mu.js",Styles.flatt,MUDialogs::showJSConsoleDialog).row();
+            ScrollPane sp=new ScrollPane(t);sp.setScrollingDisabled(true,false);
+            panel.add(sp).maxHeight(Core.graphics.getHeight()*0.65f).row();
         }
-        Core.scene.add(panel);
-        panel.pack();
-        panel.setPosition(Core.graphics.getWidth()-10f,Core.graphics.getHeight()-10f,Align.topRight);
+        Core.scene.add(panel);panel.pack();panel.setPosition(Core.graphics.getWidth()-10f,Core.graphics.getHeight()-10f,Align.topRight);
     }
-          }
+}
