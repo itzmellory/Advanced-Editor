@@ -1,5 +1,6 @@
 package advancedredactor.editor;
 import arc.*;
+import arc.func.*;
 import arc.graphics.*;
 import arc.graphics.g2d.*;
 import arc.math.*;
@@ -32,6 +33,12 @@ public class MUDialogs{
             MapResizeDialog.minSize=1;
             MapResizeDialog.maxSize=3000;
         }catch(Throwable ignored){}
+        try{
+            if(Vars.ui!=null&&Vars.ui.settings!=null&&Vars.ui.settings.game!=null){
+                Vars.ui.settings.game.checkPref("mu-planet-bg-render",false,v->renderPlanetInEditor=v);
+                renderPlanetInEditor=Core.settings.getBool("mu-planet-bg-render",false);
+            }
+        }catch(Throwable ignored){}
         Events.run(EventType.Trigger.update,()->{
             if(Core.scene==null)return;
             for(Element el:Core.scene.root.getChildren()){
@@ -55,12 +62,13 @@ public class MUDialogs{
         Time.runTask(2f,()->{
             try{
                 Table main=(Table)MUReflect.get(d,"main");
-                if(main==null)return;
+                Rules rules=(Rules)MUReflect.get(d,"rules");
+                if(main==null||rules==null)return;
                 main.row();
-                main.add("[accent]=== Mapping Utilities (Hidden Rules) ===[]").colspan(2).left().padTop(12f).padBottom(4f).row();
-                main.button("@editor.mu.advrules",Icon.settings,Styles.flatt,MUDialogs::showAdvRulesDialog).size(260f,42f).left().pad(2f).row();
-                main.button("@editor.mu.banned",Icon.cancel,Styles.flatt,MUDialogs::showBannedContentDialog).size(260f,42f).left().pad(2f).row();
-                main.button("@editor.mu.planetbg",Icon.planet,Styles.flatt,MUDialogs::showPlanetBackgroundDialog).size(260f,42f).left().pad(2f).row();
+                main.add("[accent]=== Mapping Utilities ===[]").colspan(2).left().padTop(12f).padBottom(4f).row();
+                main.button("@editor.mu.advrules",Icon.settings,Styles.flatt,()->showAdvRulesDialog(rules)).size(260f,42f).left().pad(2f).row();
+                main.button("@editor.mu.banned",Icon.cancel,Styles.flatt,()->showBannedContentDialog(rules)).size(260f,42f).left().pad(2f).row();
+                main.button("@editor.mu.planetbg",Icon.planet,Styles.flatt,()->showPlanetBackgroundDialog(rules)).size(260f,42f).left().pad(2f).row();
             }catch(Throwable ignored){}
         });
     }
@@ -81,60 +89,98 @@ public class MUDialogs{
             }
         }catch(Throwable ignored){}
     }
-    public static void showAdvRulesDialog(){
+    private static void addRuleCheck(Table t,Rules r,String field,String label){
+        if(!MUReflect.hasField(Rules.class,field))return;
+        t.check(label,MUReflect.getBool(r,field,false),v->MUReflect.set(r,field,v)).colspan(2).left().row();
+    }
+    private static void addRuleFloat(Table t,Rules r,String field,String label,float scl){
+        if(!MUReflect.hasField(Rules.class,field))return;
+        t.add(label+": ").left();
+        float cur=MUReflect.getFloat(r,field,0f)/scl;
+        t.field(String.valueOf(cur),TextField.TextFieldFilter.floatsOnly,s->MUReflect.set(r,field,Strings.parseFloat(s,cur)*scl)).width(140f).left().row();
+    }
+    private static void addRuleInt(Table t,Rules r,String field,String label){
+        if(!MUReflect.hasField(Rules.class,field))return;
+        t.add(label+": ").left();
+        int cur=MUReflect.getInt(r,field,0);
+        t.field(String.valueOf(cur),TextField.TextFieldFilter.digitsOnly,s->MUReflect.set(r,field,Strings.parseInt(s,cur))).width(140f).left().row();
+    }
+    private static void addRuleColor(Table t,Rules r,String field,String label){
+        Object colObj=MUReflect.get(r,field);
+        if(!(colObj instanceof Color))return;
+        Color col=(Color)colObj;
+        t.add(label+" (RRGGBBAA): ").left();
+        t.field(col.toString(),s->{try{MUReflect.set(r,field,Color.valueOf(s));}catch(Throwable ignored){}}).width(140f).left().row();
+    }
+    public static void showAdvRulesDialog(){showAdvRulesDialog(Vars.state.rules);}
+    public static void showAdvRulesDialog(Rules r){
         BaseDialog d=new BaseDialog("@editor.mu.advrules");
         Table t=new Table();t.defaults().left().pad(3f);
-        Rules r=Vars.state.rules;
-        t.add("[accent]Core & Zone Rules[]").colspan(2).padTop(4f).row();
-        t.check("Polygon Core Protection",r.polygonCoreProtection,b->r.polygonCoreProtection=b).colspan(2).row();
-        t.check("Core Incinerates Items",r.coreIncinerates,b->r.coreIncinerates=b).colspan(2).row();
-        t.check("Core Destroy Clear",r.coreDestroyClear,b->r.coreDestroyClear=b).colspan(2).row();
-        t.check("Only Deposit Core",r.onlyDepositCore,b->r.onlyDepositCore=b).colspan(2).row();
-        t.check("Disable Outside Area",r.disableOutsideArea,b->r.disableOutsideArea=b).colspan(2).row();
-        t.check("Border Darkness",r.borderDarkness,b->r.borderDarkness=b).colspan(2).row();
-        t.add("Enemy Core Build Radius:");t.field(String.valueOf(r.enemyCoreBuildRadius/8f),TextField.TextFieldFilter.floatsOnly,s->r.enemyCoreBuildRadius=Strings.parseFloat(s,r.enemyCoreBuildRadius/8f)*8f).width(140f).row();
-        t.add("Drop Zone Radius:");t.field(String.valueOf(r.dropZoneRadius/8f),TextField.TextFieldFilter.floatsOnly,s->r.dropZoneRadius=Strings.parseFloat(s,r.dropZoneRadius/8f)*8f).width(140f).row();
-        t.add("[accent]Combat & Unit Rules[]").colspan(2).padTop(8f).row();
-        t.check("Unit Ammo Requirements",r.unitAmmo,b->r.unitAmmo=b).colspan(2).row();
-        t.check("Unit Cap Variable",r.unitCapVariable,b->r.unitCapVariable=b).colspan(2).row();
-        t.check("Logic Unit Build",r.logicUnitBuild,b->r.logicUnitBuild=b).colspan(2).row();
-        t.check("Unit Payload Update",r.unitPayloadUpdate,b->r.unitPayloadUpdate=b).colspan(2).row();
-        t.check("Possession Allowed",r.possessionAllowed,b->r.possessionAllowed=b).colspan(2).row();
-        t.add("Unit Cap:");t.field(String.valueOf(r.unitCap),TextField.TextFieldFilter.digitsOnly,s->r.unitCap=Strings.parseInt(s,r.unitCap)).width(140f).row();
-        t.add("[accent]World & Environment[]").colspan(2).padTop(8f).row();
-        t.check("Reactor Explosions",r.reactorExplosions,b->r.reactorExplosions=b).colspan(2).row();
-        t.check("Damage Explosions",r.damageExplosions,b->r.damageExplosions=b).colspan(2).row();
-        t.check("Fire Enabled",r.fire,b->r.fire=b).colspan(2).row();
-        t.check("Ghost Blocks",r.ghostBlocks,b->r.ghostBlocks=b).colspan(2).row();
-        t.check("Hide Banned Blocks",r.hideBannedBlocks,b->r.hideBannedBlocks=b).colspan(2).row();
-        t.check("Wait Wave Enemies",r.waitEnemies,b->r.waitEnemies=b).colspan(2).row();
-        t.check("Show Spawns",r.showSpawns,b->r.showSpawns=b).colspan(2).row();
-        t.check("Static Fog",r.staticFog,b->r.staticFog=b).colspan(2).row();
-        t.add("Solar Multiplier:");t.field(String.valueOf(r.solarMultiplier),TextField.TextFieldFilter.floatsOnly,s->r.solarMultiplier=Strings.parseFloat(s,r.solarMultiplier)).width(140f).row();
-        t.add("Drag Multiplier:");t.field(String.valueOf(r.dragMultiplier),TextField.TextFieldFilter.floatsOnly,s->r.dragMultiplier=Strings.parseFloat(s,r.dragMultiplier)).width(140f).row();
-        t.add("Ambient Light (RRGGBBAA):");t.field(r.ambientLight.toString(),s->{try{r.ambientLight=Color.valueOf(s);}catch(Exception ignored){}}).width(140f).row();
-        t.add("Static Color (RRGGBBAA):");t.field(r.staticColor.toString(),s->{try{r.staticColor=Color.valueOf(s);}catch(Exception ignored){}}).width(140f).row();
-        t.add("Dynamic Color (RRGGBBAA):");t.field(r.dynamicColor.toString(),s->{try{r.dynamicColor=Color.valueOf(s);}catch(Exception ignored){}}).width(140f).row();
-        t.add("[accent]All Internal Fields (Reflection)[]").colspan(2).padTop(8f).row();
+        t.add("[accent]General & Core Rules[]").colspan(2).padTop(4f).row();
+        addRuleCheck(t,r,"polygonCoreProtection","Polygon Core Protection");
+        addRuleCheck(t,r,"coreIncinerates","Core Incinerates Items");
+        addRuleCheck(t,r,"coreDestroyClear","Core Destroy Clear");
+        addRuleCheck(t,r,"onlyDepositCore","Only Deposit Core");
+        addRuleCheck(t,r,"disableOutsideArea","Disable Outside Area");
+        addRuleCheck(t,r,"borderDarkness","Border Darkness");
+        addRuleCheck(t,r,"cleanupDeadTeams","Cleanup Dead Teams");
+        addRuleCheck(t,r,"placeRangeCheck","Place Range Check");
+        addRuleFloat(t,r,"enemyCoreBuildRadius","Enemy Core Build Radius",8f);
+        addRuleFloat(t,r,"dropZoneRadius","Drop Zone Radius",8f);
+        t.add("[accent]Units & Combat[]").colspan(2).padTop(8f).row();
+        addRuleCheck(t,r,"unitAmmo","Unit Ammo Requirements");
+        addRuleCheck(t,r,"unitCapVariable","Unit Cap Variable");
+        addRuleCheck(t,r,"logicUnitBuild","Logic Unit Build");
+        addRuleCheck(t,r,"logicUnitControl","Logic Unit Control");
+        addRuleCheck(t,r,"unitPayloadUpdate","Unit Payload Update");
+        addRuleCheck(t,r,"possessionAllowed","Possession Allowed");
+        addRuleCheck(t,r,"allowEditWorldProcessors","Allow Edit World Processors");
+        addRuleInt(t,r,"unitCap","Base Unit Cap");
+        addRuleFloat(t,r,"unitBuildSpeedMultiplier","Unit Build Speed Multiplier",1f);
+        addRuleFloat(t,r,"unitCostMultiplier","Unit Cost Multiplier",1f);
+        addRuleFloat(t,r,"unitDamageMultiplier","Unit Damage Multiplier",1f);
+        addRuleFloat(t,r,"unitHealthMultiplier","Unit Health Multiplier",1f);
+        addRuleFloat(t,r,"unitCrashDamageMultiplier","Unit Crash Damage Multiplier",1f);
+        t.add("[accent]Environment & Waves[]").colspan(2).padTop(8f).row();
+        addRuleCheck(t,r,"reactorExplosions","Reactor Explosions");
+        addRuleCheck(t,r,"damageExplosions","Damage Explosions");
+        addRuleCheck(t,r,"fire","Fire Enabled");
+        addRuleCheck(t,r,"ghostBlocks","Ghost Blocks");
+        addRuleCheck(t,r,"hideBannedBlocks","Hide Banned Blocks");
+        addRuleCheck(t,r,"waitEnemies","Wait Wave Enemies");
+        addRuleCheck(t,r,"showSpawns","Show Spawns");
+        addRuleCheck(t,r,"randomWaveAI","Random Wave AI");
+        addRuleCheck(t,r,"staticFog","Static Fog");
+        addRuleCheck(t,r,"fog","Fog of War");
+        addRuleCheck(t,r,"lighting","Ambient Lighting");
+        addRuleFloat(t,r,"solarMultiplier","Solar Multiplier",1f);
+        addRuleFloat(t,r,"dragMultiplier","Drag Multiplier",1f);
+        addRuleColor(t,r,"ambientLight","Ambient Light");
+        addRuleColor(t,r,"staticColor","Static Fog Color");
+        addRuleColor(t,r,"dynamicColor","Dynamic Fog Color");
+        t.add("[accent]All Rules Fields (Auto-Reflect)[]").colspan(2).padTop(8f).row();
         for(Field f:Rules.class.getFields()){
             if(Modifier.isStatic(f.getModifiers())||Modifier.isFinal(f.getModifiers()))continue;
-            if(f.getType()==boolean.class){
-                try{
+            try{
+                if(f.getType()==boolean.class){
                     boolean cur=f.getBoolean(r);
-                    t.check("[lightgray]"+f.getName(),cur,v->{try{f.setBoolean(r,v);}catch(Exception ignored){}}).colspan(2).row();
-                }catch(Exception ignored){}
-            }else if(f.getType()==float.class){
-                try{
+                    t.check("[lightgray]"+f.getName(),cur,v->{try{f.setBoolean(r,v);}catch(Throwable ignored){}}).colspan(2).left().row();
+                }else if(f.getType()==float.class){
                     float cur=f.getFloat(r);
-                    t.add("[lightgray]"+f.getName()+":");
-                    t.field(String.valueOf(cur),TextField.TextFieldFilter.floatsOnly,s->{try{f.setFloat(r,Strings.parseFloat(s,cur));}catch(Exception ignored){}}).width(140f).row();
-                }catch(Exception ignored){}
-            }
+                    t.add("[lightgray]"+f.getName()+": ").left();
+                    t.field(String.valueOf(cur),TextField.TextFieldFilter.floatsOnly,s->{try{f.setFloat(r,Strings.parseFloat(s,cur));}catch(Throwable ignored){}}).width(140f).left().row();
+                }else if(f.getType()==int.class){
+                    int cur=f.getInt(r);
+                    t.add("[lightgray]"+f.getName()+": ").left();
+                    t.field(String.valueOf(cur),TextField.TextFieldFilter.digitsOnly,s->{try{f.setInt(r,Strings.parseInt(s,cur));}catch(Throwable ignored){}}).width(140f).left().row();
+                }
+            }catch(Throwable ignored){}
         }
         d.cont.pane(t).size(Math.min(Core.graphics.getWidth()*0.92f,520f),Math.min(Core.graphics.getHeight()*0.82f,540f));
         d.addCloseButton();d.show();
     }
-    public static void showBannedContentDialog(){
+    public static void showBannedContentDialog(){showBannedContentDialog(Vars.state.rules);}
+    public static void showBannedContentDialog(Rules rules){
         BaseDialog d=new BaseDialog("@editor.mu.banned");
         final String[] query={""};
         final int[] tab={0};
@@ -143,29 +189,29 @@ public class MUDialogs{
             grid.clearChildren();String q=query[0].toLowerCase().trim();int cols=0;
             if(tab[0]==0){
                 for(Block b:Vars.content.blocks()){
-                    if((!q.isEmpty()&&!b.localizedName.toLowerCase().contains(q)&&!b.name.toLowerCase().contains(q)))continue;
+                    if(!q.isEmpty()&&!b.localizedName.toLowerCase().contains(q)&&!b.name.toLowerCase().contains(q))continue;
                     Button btn=grid.button(bt->bt.image(b.uiIcon).size(28f),Styles.flati,()->{
-                        if(Vars.state.rules.bannedBlocks.contains(b))Vars.state.rules.bannedBlocks.remove(b);else Vars.state.rules.bannedBlocks.add(b);
+                        if(rules.bannedBlocks.contains(b))rules.bannedBlocks.remove(b);else rules.bannedBlocks.add(b);
                     }).size(40f).pad(2f).tooltip(b.localizedName+" ("+b.name+")").get();
-                    btn.update(()->btn.setColor(Vars.state.rules.bannedBlocks.contains(b)?Color.scarlet:Color.white));
+                    btn.update(()->btn.setColor(rules.bannedBlocks.contains(b)?Color.scarlet:Color.white));
                     if(++cols%11==0)grid.row();
                 }
             }else if(tab[0]==1){
                 for(UnitType u:Vars.content.units()){
                     if(!q.isEmpty()&&!u.localizedName.toLowerCase().contains(q)&&!u.name.toLowerCase().contains(q))continue;
                     Button btn=grid.button(bt->bt.image(u.uiIcon).size(28f),Styles.flati,()->{
-                        if(Vars.state.rules.bannedUnits.contains(u))Vars.state.rules.bannedUnits.remove(u);else Vars.state.rules.bannedUnits.add(u);
+                        if(rules.bannedUnits.contains(u))rules.bannedUnits.remove(u);else rules.bannedUnits.add(u);
                     }).size(40f).pad(2f).tooltip(u.localizedName+" ("+u.name+")").get();
-                    btn.update(()->btn.setColor(Vars.state.rules.bannedUnits.contains(u)?Color.scarlet:Color.white));
+                    btn.update(()->btn.setColor(rules.bannedUnits.contains(u)?Color.scarlet:Color.white));
                     if(++cols%11==0)grid.row();
                 }
             }else if(tab[0]==2){
                 for(Block b:Vars.content.blocks()){
                     if(!q.isEmpty()&&!b.localizedName.toLowerCase().contains(q)&&!b.name.toLowerCase().contains(q))continue;
                     Button btn=grid.button(bt->bt.image(b.uiIcon).size(28f),Styles.flati,()->{
-                        if(Vars.state.rules.revealedBlocks.contains(b))Vars.state.rules.revealedBlocks.remove(b);else Vars.state.rules.revealedBlocks.add(b);
+                        if(rules.revealedBlocks.contains(b))rules.revealedBlocks.remove(b);else rules.revealedBlocks.add(b);
                     }).size(40f).pad(2f).tooltip("Reveal: "+b.localizedName).get();
-                    btn.update(()->btn.setColor(Vars.state.rules.revealedBlocks.contains(b)?Color.lime:Color.gray));
+                    btn.update(()->btn.setColor(rules.revealedBlocks.contains(b)?Color.lime:Color.gray));
                     if(++cols%11==0)grid.row();
                 }
             }
@@ -176,34 +222,42 @@ public class MUDialogs{
             top.button("Revealed Blocks",Styles.flatt,()->{tab[0]=2;rebuild.run();}).size(140f,36f).pad(2f);
         }).row();
         d.cont.table(act->{
-            act.button("Ban All",Styles.flatt,()->{
-                if(tab[0]==0)for(Block b:Vars.content.blocks())Vars.state.rules.bannedBlocks.add(b);
-                else if(tab[0]==1)for(UnitType u:Vars.content.units())Vars.state.rules.bannedUnits.add(u);
-            }).size(120f,32f).pad(2f);
+            act.button("Select All",Styles.flatt,()->{
+                if(tab[0]==0)for(Block b:Vars.content.blocks())rules.bannedBlocks.add(b);
+                else if(tab[0]==1)for(UnitType u:Vars.content.units())rules.bannedUnits.add(u);
+                else for(Block b:Vars.content.blocks())rules.revealedBlocks.add(b);
+            }).size(110f,32f).pad(2f);
             act.button("Clear All",Styles.flatt,()->{
-                if(tab[0]==0)Vars.state.rules.bannedBlocks.clear();
-                else if(tab[0]==1)Vars.state.rules.bannedUnits.clear();
-                else Vars.state.rules.revealedBlocks.clear();
-            }).size(120f,32f).pad(2f);
+                if(tab[0]==0)rules.bannedBlocks.clear();
+                else if(tab[0]==1)rules.bannedUnits.clear();
+                else rules.revealedBlocks.clear();
+            }).size(110f,32f).pad(2f);
+            act.button("Invert",Styles.flatt,()->{
+                if(tab[0]==0)for(Block b:Vars.content.blocks()){if(rules.bannedBlocks.contains(b))rules.bannedBlocks.remove(b);else rules.bannedBlocks.add(b);}
+                else if(tab[0]==1)for(UnitType u:Vars.content.units()){if(rules.bannedUnits.contains(u))rules.bannedUnits.remove(u);else rules.bannedUnits.add(u);}
+                else for(Block b:Vars.content.blocks()){if(rules.revealedBlocks.contains(b))rules.revealedBlocks.remove(b);else rules.revealedBlocks.add(b);}
+            }).size(110f,32f).pad(2f);
         }).row();
         d.cont.field("",t->{query[0]=t;rebuild.run();}).width(Math.min(Core.graphics.getWidth()*0.8f,420f)).padBottom(6f).row();
         rebuild.run();
         d.cont.pane(grid).size(Math.min(Core.graphics.getWidth()*0.92f,540f),Math.min(Core.graphics.getHeight()*0.7f,380f));
         d.addCloseButton();d.show();
     }
-    public static void showPlanetBackgroundDialog(){
+    public static void showPlanetBackgroundDialog(){showPlanetBackgroundDialog(Vars.state.rules);}
+    public static void showPlanetBackgroundDialog(Rules rules){
         BaseDialog d=new BaseDialog("@editor.mu.planetbg");
-        if(Vars.state.rules.planetBackground==null){
-            Vars.state.rules.planetBackground=new PlanetParams();
-            Vars.state.rules.planetBackground.planet=Planets.serpulo;
+        if(rules.planetBackground==null){
+            rules.planetBackground=new PlanetParams();
+            rules.planetBackground.planet=Planets.serpulo;
         }
-        PlanetParams p=Vars.state.rules.planetBackground;
+        PlanetParams p=rules.planetBackground;
         Table t=new Table();t.defaults().left().pad(4f);
-        t.check("Enable Planet Background (Saves to Map)",Vars.state.rules.planetBackground!=null,v->{
-            Vars.state.rules.planetBackground=v?p:null;
-            if(v)Vars.state.rules.dragMultiplier=1f;
+        t.check("Enable Planet Background",rules.planetBackground!=null,v->{
+            rules.planetBackground=v?p:null;
         }).colspan(2).row();
-        t.check("Live Preview in Editor",renderPlanetInEditor,v->renderPlanetInEditor=v).colspan(2).row();
+        t.check("Render Planet in Editor",renderPlanetInEditor,v->{
+            renderPlanetInEditor=v;Core.settings.put("mu-planet-bg-render",v);
+        }).colspan(2).row();
         t.add("Planet:");
         t.button(b->b.label(()->p.planet==null?"None":p.planet.localizedName),Styles.flatt,()->{
             Seq<Planet> pl=Vars.content.planets();
@@ -265,4 +319,4 @@ public class MUDialogs{
         d.cont.pane(p->p.add(out).growX().left()).size(Math.min(Core.graphics.getWidth()*0.9f,500f),140f);
         d.addCloseButton();d.show();
     }
-                                                }
+    }
