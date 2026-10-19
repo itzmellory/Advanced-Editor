@@ -52,7 +52,6 @@ public class GeneratorUI{
         addFilterButton(customPanel,addDialog,new AdvancedTerrainFilter());
         addFilterButton(customPanel,addDialog,new AdvancedWaterFilter());
         addFilterButton(customPanel,addDialog,new AdvancedRuinFilter());
-        addFilterButton(customPanel,addDialog,new AdvancedRoadFilter());
         wrapper.add(customPanel).top();
         addDialog.cont.add(wrapper);
     }
