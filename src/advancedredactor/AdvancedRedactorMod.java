@@ -14,6 +14,7 @@ public class AdvancedRedactorMod extends Mod{
         Events.on(ClientLoadEvent.class,e->{
             registerFilters();
             GeneratorUI.init();
+            LeftSideUi.init();
         });
     }
     private void registerFilters(){
@@ -23,7 +24,6 @@ public class AdvancedRedactorMod extends Mod{
             list.add(AdvancedTerrainFilter::new);
             list.add(AdvancedWaterFilter::new);
             list.add(AdvancedRuinFilter::new);
-            list.add(AdvancedBlendFilter::new);
             list.add(AdvancedRotationFilter::new);
             Reflect.set(Maps.class,"allFilterTypes",list.toArray(Prov.class));
         }catch(Exception ignored){}
