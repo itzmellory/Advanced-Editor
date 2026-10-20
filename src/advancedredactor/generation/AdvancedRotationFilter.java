@@ -1,12 +1,6 @@
 package advancedredactor.generation;
 import arc.*;
-import arc.graphics.g2d.*;
-import arc.math.geom.*;
-import arc.scene.ui.Image;
-import arc.scene.ui.layout.*;
-import mindustry.game.*;
 import mindustry.gen.*;
-import mindustry.graphics.*;
 import mindustry.maps.filters.*;
 import mindustry.world.*;
 import advancedredactor.ui.ModFilterOptions.*;
@@ -41,36 +35,16 @@ public class AdvancedRotationFilter extends GenerateFilter{
             if(!flipDirection){
                 if(top&&!right)return;
                 int sx=x,sy=y,steps=0;
-                if(top&&right){
-                    sx=w-1-y;
-                    sy=x;
-                    steps=3;
-                }else if(!top&&right){
-                    sx=w-1-x;
-                    sy=h-1-y;
-                    steps=2;
-                }else{
-                    sx=y;
-                    sy=h-1-x;
-                    steps=1;
-                }
+                if(top&&right){sx=w-1-y;sy=x;steps=3;}
+                else if(!top&&right){sx=w-1-x;sy=h-1-y;steps=2;}
+                else{sx=y;sy=h-1-x;steps=1;}
                 copyRotated(in,sx,sy,steps);
             }else{
                 if(!top&&!right)return;
                 int sx=x,sy=y,steps=0;
-                if(top&&!right){
-                    sx=h-1-y;
-                    sy=x;
-                    steps=1;
-                }else if(top&&right){
-                    sx=w-1-x;
-                    sy=h-1-y;
-                    steps=2;
-                }else{
-                    sx=y;
-                    sy=w-1-x;
-                    steps=3;
-                }
+                if(top&&!right){sx=h-1-y;sy=x;steps=1;}
+                else if(top&&right){sx=w-1-x;sy=h-1-y;steps=2;}
+                else{sx=y;sy=w-1-x;steps=3;}
                 copyRotated(in,sx,sy,steps);
             }
         }else{
@@ -85,25 +59,10 @@ public class AdvancedRotationFilter extends GenerateFilter{
         Tile src=readTile(in,sx,sy);
         if(src==null)return;
         in.floor=src.floor();
-        if(!in.block.synthetic()&&!src.block().synthetic()){
-            in.block=src.block();
-        }
+        if(!in.block.synthetic()&&!src.block().synthetic())in.block=src.block();
         in.overlay=src.overlay();
         Tile dst=readTile(in,in.x,in.y);
-        if(dst!=null&&src.build!=null&&dst.build!=null){
-            dst.build.rotation=(src.build.rotation+steps)&3;
-        }
-    }
-    @Override public void draw(Image image){
-        super.draw(image);
-        float w=image.getWidth(),h=image.getHeight();
-        float x=image.x,y=image.y;
-        Lines.stroke(Scl.scl(2f),Pal.accent);
-        Lines.line(x,y+h/2f,x+w,y+h/2f);
-        if(rotate4Way){
-            Lines.line(x+w/2f,y,x+w/2f,y+h);
-        }
-        Draw.reset();
+        if(dst!=null&&src.build!=null&&dst.build!=null)dst.build.rotation=(src.build.rotation+steps)&3;
     }
     private static Tile readTile(GenerateInput in,int x,int y){
         try{if(tileMethod!=null)return(Tile)tileMethod.invoke(in,(float)x,(float)y);}catch(Exception ignored){}
