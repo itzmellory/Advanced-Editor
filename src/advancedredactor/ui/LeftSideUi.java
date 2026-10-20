@@ -10,29 +10,35 @@ import mindustry.editor.*;
 import mindustry.game.EventType.*;
 import mindustry.ui.*;
 public class LeftSideUi{
-    private static boolean injected=false;
+    private static final ObjectSet<Table> hookedTables=new ObjectSet<>();
     public static void init(){
         Events.run(Trigger.update,()->{
-            if(injected||Vars.ui==null||Vars.ui.editor==null)return;
-            if(injectBrushSizeField(Vars.ui.editor))injected=true;
+            if(Vars.ui==null||Vars.ui.editor==null)return;
+            if(!Vars.ui.editor.isShown()){
+                hookedTables.clear();
+                return;
+            }
+            injectBrushSizeField(Vars.ui.editor);
         });
     }
-    private static boolean injectBrushSizeField(Element root){
+    private static void injectBrushSizeField(Element root){
         if(root instanceof Slider){
             Slider sl=(Slider)root;
             if(Math.abs(sl.getMaxValue()-(MapEditor.brushSizes.length-1))<0.1f){
                 if(sl.parent instanceof Stack&&sl.parent.parent instanceof Table){
-                    rebuildLeftBrushPanel((Table)sl.parent.parent,(Stack)sl.parent,sl);
-                    return true;
+                    Table parentTable=(Table)sl.parent.parent;
+                    if(!hookedTables.contains(parentTable)){
+                        hookedTables.add(parentTable);
+                        rebuildLeftBrushPanel(parentTable,(Stack)sl.parent,sl);
+                    }
                 }
             }
         }
         if(root instanceof Group){
             for(Element e:((Group)root).getChildren()){
-                if(injectBrushSizeField(e))return true;
+                injectBrushSizeField(e);
             }
         }
-        return false;
     }
     private static void rebuildLeftBrushPanel(Table parent,Stack stack,Slider slider){
         try{
