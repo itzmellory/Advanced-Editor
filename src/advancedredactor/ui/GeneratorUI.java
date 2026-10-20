@@ -17,29 +17,40 @@ public class GeneratorUI{
     private static final ObjectSet<BaseDialog> hookedDialogs=new ObjectSet<>();
     public static void init(){
         Events.run(Trigger.update,()->{
-            if(Vars.ui==null||Vars.ui.editor==null||Vars.ui.editor.generate==null)return;
-            try{
-                BaseDialog d=(BaseDialog)Reflect.get(Vars.ui.editor.generate,"addDialog");
-                if(d==null||!d.isShown()){
-                    hookedDialogs.clear();
-                    return;
-                }
-                if(!hookedDialogs.contains(d)&&!d.cont.getChildren().isEmpty()){
-                    Element first=d.cont.getChildren().first();
-                    if(first instanceof Table){
-                        hookedDialogs.add(d);
-                        injectCustomPanel(d,(Table)first);
+            if(Core.scene==null)return;
+            for(Element el:Core.scene.root.getChildren()){
+                if(el instanceof BaseDialog){
+                    BaseDialog dialog=(BaseDialog)el;
+                    if(!hookedDialogs.contains(dialog)&&isAddFilterDialog(dialog)){
+                        hookedDialogs.add(dialog);
+                        injectCustomPanel(dialog);
                     }
                 }
-            }catch(Exception ignored){}
+            }
         });
     }
-    private static void injectCustomPanel(BaseDialog addDialog,Table vanillaTable){
+    private static boolean isAddFilterDialog(BaseDialog dialog){
+        String title=dialog.title.getText().toString();
+        String addLocalized=Core.bundle.get("add","Add...");
+        if(!title.equals("Add...")&&!title.equals(addLocalized))return false;
+        if(dialog.cont.getChildren().size==1){
+            Element first=dialog.cont.getChildren().first();
+            if(first instanceof ScrollPane)return true;
+            if(first instanceof Table)return ((Table)first).getChildren().size>=5;
+        }
+        return false;
+    }
+    private static void injectCustomPanel(BaseDialog addDialog){
+        Element first=addDialog.cont.getChildren().first();
         addDialog.cont.clearChildren();
         Table wrapper=new Table();
-        ScrollPane vp=new ScrollPane(vanillaTable);
-        vp.setScrollingDisabled(true,false);
-        wrapper.add(vp).padRight(15f).top().maxHeight(Core.graphics.getHeight()*0.8f);
+        if(first instanceof ScrollPane){
+            ScrollPane vp=(ScrollPane)first;
+            vp.setScrollingDisabled(true,false);
+            wrapper.add(vp).padRight(15f).top().maxHeight(Core.graphics.getHeight()*0.8f);
+        }else{
+            wrapper.add(first).padRight(15f).top();
+        }
         Table customPanel=new Table(Tex.button);
         customPanel.margin(14f);
         customPanel.defaults().size(230f,45f).pad(3f).left();
@@ -71,11 +82,12 @@ public class GeneratorUI{
     @SuppressWarnings("unchecked")
     private static void applyToGenerateDialog(GenerateFilter filter){
         try{
-            Seq<GenerateFilter> filters=Reflect.get(Vars.ui.editor.generate,"filters");
+            MapGenerateDialog gen=Vars.ui.editor.getGenerateDialog();
+            Seq<GenerateFilter> filters=Reflect.get(MapGenerateDialog.class,gen,"filters");
             if(filters!=null){
                 filters.add(filter);
-                Reflect.invoke(MapGenerateDialog.class,Vars.ui.editor.generate,"rebuildFilters",new Object[]{},new Class[]{});
-                Reflect.invoke(MapGenerateDialog.class,Vars.ui.editor.generate,"update",new Object[]{},new Class[]{});
+                Reflect.invoke(MapGenerateDialog.class,gen,"rebuildFilters",new Object[]{},new Class[]{});
+                Reflect.invoke(MapGenerateDialog.class,gen,"update",new Object[]{},new Class[]{});
             }
         }catch(Exception ignored){}
     }
