@@ -1,5 +1,5 @@
 package advancedredactor.ui;
-import arc.Core;
+import arc.*;
 import arc.func.*;
 import arc.scene.Element;
 import arc.scene.ui.*;
