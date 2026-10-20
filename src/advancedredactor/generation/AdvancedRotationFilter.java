@@ -2,6 +2,7 @@ package advancedredactor.generation;
 import arc.*;
 import arc.graphics.g2d.*;
 import arc.math.geom.*;
+import arc.scene.ui.Image;
 import arc.scene.ui.layout.*;
 import mindustry.game.*;
 import mindustry.gen.*;
