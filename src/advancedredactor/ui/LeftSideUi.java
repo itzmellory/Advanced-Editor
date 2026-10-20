@@ -28,7 +28,9 @@ public class LeftSideUi{
             }
         }
         if(root instanceof Group){
-            for(Element e:((Group)root).getChildren())if(injectBrushSizeField(e))return true;
+            for(Element e:((Group)root).getChildren()){
+                if(injectBrushSizeField(e))return true;
+            }
         }
         return false;
     }
