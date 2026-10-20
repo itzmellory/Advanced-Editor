@@ -114,9 +114,10 @@ public class GeneratorUI{
         addFilterButton(customPanel,addDialog,new AdvancedWaterFilter());
         addFilterButton(customPanel,addDialog,new AdvancedRuinFilter());
         addFilterButton(customPanel,addDialog,new AdvancedBlendFilter());
-        addFilterButton(customPanel,addDialog,new AdvancedCircuitFilter());
         addFilterButton(customPanel,addDialog,new AdvancedRotationFilter());
-        wrapper.add(customPanel).top();
+        ScrollPane pane=new ScrollPane(customPanel);
+        pane.setScrollingDisabled(true,false);
+        wrapper.add(pane).top().maxHeight(Core.graphics.getHeight()*0.8f);
         addDialog.cont.add(wrapper);
     }
     @SuppressWarnings("unchecked")
