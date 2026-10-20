@@ -9,7 +9,6 @@ import mindustry.world.*;
 import mindustry.world.blocks.environment.*;
 import advancedredactor.ui.ModFilterOptions.*;
 import static mindustry.maps.filters.FilterOption.*;
-import static advancedredactor.ui.ModFilterOptions.*;
 public class AdvancedCircuitFilter extends GenerateFilter{
     public Block targetFloor=Blocks.air;
     public Block baseFloor=Blocks.darkPanel3;
@@ -24,8 +23,8 @@ public class AdvancedCircuitFilter extends GenerateFilter{
         return new FilterOption[]{
             new BlockOption("targetfloor",()->targetFloor,b->targetFloor=b,floorsOptional),
             new ToggleOption("usetargetonly",()->useTargetOnly,v->useTargetOnly=v),
-            new BlockOption("basefloor",()->baseFloor,b->baseFloor=b,floorsOnly),
-            new BlockOption("tracefloor",()->traceFloor,b->traceFloor=b,floorsOnly),
+            new BlockOption("basefloor",()->baseFloor,b->baseFloor=b,advancedredactor.ui.ModFilterOptions.floorsOnly),
+            new BlockOption("tracefloor",()->traceFloor,b->traceFloor=b,advancedredactor.ui.ModFilterOptions.floorsOnly),
             new BlockOption("zonefloor",()->zoneFloor,b->zoneFloor=b,floorsOptional),
             new BlockOption("wall",()->wallBlock,b->wallBlock=b,wallsOptional),
             new SliderOption("gridscale",()->gridScale,v->gridScale=v,6f,48f,1f),
@@ -104,4 +103,4 @@ public class AdvancedCircuitFilter extends GenerateFilter{
         v^=v>>>16;v*=0x7feb352d;v^=v>>>15;
         return v&0x7fffffff;
     }
-    }
+}
