@@ -9,13 +9,11 @@ import mindustry.maps.filters.*;
 import mindustry.mod.*;
 import advancedredactor.generation.*;
 import advancedredactor.ui.*;
-import advancedredactor.editor.*;
 public class AdvancedRedactorMod extends Mod{
     public AdvancedRedactorMod(){
         Events.on(ClientLoadEvent.class,e->{
             registerFilters();
             GeneratorUI.init();
-            MUEditorManager.init();
         });
     }
     private void registerFilters(){
@@ -25,6 +23,9 @@ public class AdvancedRedactorMod extends Mod{
             list.add(AdvancedTerrainFilter::new);
             list.add(AdvancedWaterFilter::new);
             list.add(AdvancedRuinFilter::new);
+            list.add(AdvancedBlendFilter::new);
+            list.add(AdvancedCircuitFilter::new);
+            list.add(AdvancedRotationFilter::new);
             Reflect.set(Maps.class,"allFilterTypes",list.toArray(Prov.class));
         }catch(Exception ignored){}
     }
