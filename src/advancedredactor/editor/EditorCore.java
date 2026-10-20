@@ -186,7 +186,12 @@ public class EditorCore{
         public boolean canRedo(){return index<stack.size-1;}
         public void clear(){stack.clear();index=-1;}
         public static void refreshMap(){
-            try{if(Vars.editor!=null&&Vars.editor.renderer!=null)Vars.editor.renderer.recache();}catch(Throwable ignored){}
+            try{
+                if(Vars.editor!=null&&Vars.editor.renderer!=null){
+                    ReflectUtil.invoke(Vars.editor.renderer,"recache");
+                    ReflectUtil.invoke(Vars.editor.renderer,"updateAll");
+                }
+            }catch(Throwable ignored){}
             try{
                 if(Vars.renderer!=null&&Vars.renderer.blocks!=null&&Vars.renderer.blocks.floor!=null){
                     ReflectUtil.invoke(Vars.renderer.blocks.floor,"clearTiles");
@@ -283,4 +288,4 @@ public class EditorCore{
             pack();
         }
     }
-                  }
+}
