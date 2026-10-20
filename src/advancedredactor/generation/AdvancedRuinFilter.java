@@ -139,8 +139,8 @@ public class AdvancedRuinFilter extends GenerateFilter{
                 }else if((l.wall[loc]||l.debrisWall[loc])&&!gfb[i]){
                     boolean p=l.criticalWall[loc];
                     Block wl=l.mainWall[loc]?sw:l.debrisWall[loc]?dw:aw;
-                    if(!p&&structuredDamage(x,y,cX,cY,sp.wallDamage,0x57))wl=Blocks.air;
-                    if(wl!=null){
+                    if(!p&&structuredDamage(x,y,cX,cY,sp.wallDamage,0x57))wl=null;
+                    if(wl!=null&&wl!=Blocks.air){
                         if(!gwb[i]||p||!cw[i]){gw[i]=wl;cw[i]=p;}
                         gwb[i]=true;
                     }
@@ -208,8 +208,7 @@ public class AdvancedRuinFilter extends GenerateFilter{
         if(!blockModified[i])return;
         Block cb=in.block==null?Blocks.air:in.block;
         if(cb.synthetic())return;
-        if(st.block==Blocks.air)in.block=Blocks.air;
-        else if(st.block!=null&&!st.block.synthetic())in.block=st.block;
+        if(st.block!=null&&!st.block.synthetic())in.block=st.block;
     }
     private void rebuildCenters(GenerateInput in){
         if(centers==null)centers=new IntSeq();
@@ -259,8 +258,7 @@ public class AdvancedRuinFilter extends GenerateFilter{
     private void applyStep(TileState s,TileState bl,RuinStep st,int i){
         if(st.preservesFloor()){s.floor=bl.floor;floorModified[i]=false;}
         else if(st.hasFloor()&&st.floor instanceof Floor){s.floor=(Floor)st.floor;floorModified[i]=true;}
-        if(st.removesWall()){s.block=Blocks.air;blockModified[i]=true;}
-        else if(st.hasWall()&&st.wall!=null){s.block=st.wall;blockModified[i]=true;}
+        if(st.hasWall()&&st.wall!=null&&st.wall!=Blocks.air){s.block=st.wall;blockModified[i]=true;}
     }
     private boolean passesNoise(int x,int y){return passesNoise((float)x,(float)y);}
     private boolean passesNoise(float x,float y){
@@ -398,7 +396,7 @@ public class AdvancedRuinFilter extends GenerateFilter{
                     Table row=new Table(Tex.button);row.margin(6f);
                     row.add("#"+(i+1)).width(20f);
                     row.button(b->b.image(st.floor==null?Blocks.air.uiIcon:st.floor.uiIcon).size(24f),()->pickBlock(floorsOptional,b->{st.floor=b;rebuild[0].run();if(changed!=null)changed.run();})).size(36f).pad(2f);
-                    row.button(b->b.image(st.removeWall?Icon.cancel:new arc.scene.style.TextureRegionDrawable(st.wall==null?Blocks.air.uiIcon:st.wall.uiIcon)).size(24f),()->pickBlock(b->b==Blocks.air||wallsOptional.get(b),b->{if(b==Blocks.air){st.wall=null;st.removeWall=true;}else{st.wall=b;st.removeWall=false;}rebuild[0].run();if(changed!=null)changed.run();})).size(36f).pad(2f);
+                    row.button(b->b.image(st.wall==null?Blocks.air.uiIcon:st.wall.uiIcon).size(24f),()->pickBlock(b->b==Blocks.air||wallsOptional.get(b),b->{st.wall=b==Blocks.air?null:b;rebuild[0].run();if(changed!=null)changed.run();})).size(36f).pad(2f);
                     row.button(st.stepMode.name(),Styles.flatt,()->{st.stepMode=st.stepMode.next();rebuild[0].run();if(changed!=null)changed.run();}).size(80f,32f).pad(2f);
                     Slider sl=new Slider(0f,32f,0.5f,false);sl.setValue(st.radius);
                     Label rl=new Label(Strings.fixed(st.radius,1));
@@ -442,14 +440,13 @@ public class AdvancedRuinFilter extends GenerateFilter{
         }
     }
     public static class RuinStep implements Serializable{
-        public float radius;public Block floor,wall;public boolean removeWall;public StepMode stepMode=StepMode.chebyshev;
+        public float radius;public Block floor,wall;public StepMode stepMode=StepMode.chebyshev;
         public RuinStep(){}
         public RuinStep(float r,Block f,Block w){radius=r;floor=f;wall=w;}
-        public RuinStep copy(){RuinStep s=new RuinStep(radius,floor,wall);s.removeWall=removeWall;s.stepMode=stepMode;return s;}
+        public RuinStep copy(){RuinStep s=new RuinStep(radius,floor,wall);s.stepMode=stepMode;return s;}
         public boolean hasFloor(){return floor!=null&&floor!=Blocks.air;}
         public boolean preservesFloor(){return floor!=null&&floor==Blocks.air;}
-        public boolean hasWall(){return wall!=null&&wall!=Blocks.air&&!removeWall;}
-        public boolean removesWall(){return removeWall||(wall!=null&&wall==Blocks.air);}
+        public boolean hasWall(){return wall!=null&&wall!=Blocks.air;}
         public boolean matches(int cx,int cy,int x,int y){
             if(!Float.isFinite(radius)||radius<0f)return false;
             float dx=x-cx,dy=y-cy;
@@ -458,8 +455,7 @@ public class AdvancedRuinFilter extends GenerateFilter{
         }
         public static RuinStep floor(float r,Block f){return new RuinStep(r,f,null);}
         public static RuinStep wall(float r,Block w){return new RuinStep(r,null,w);}
-        public static RuinStep removeWall(float r){RuinStep s=new RuinStep(r,Blocks.air,null);s.removeWall=true;return s;}
-        public static RuinStep[] defaults(){return new RuinStep[]{floor(6f,Blocks.metalFloor),floor(1f,Blocks.metalFloor3),wall(4f,Blocks.darkMetal),removeWall(3f)};}
+        public static RuinStep[] defaults(){return new RuinStep[]{floor(6f,Blocks.metalFloor),floor(1f,Blocks.metalFloor3),wall(4f,Blocks.darkMetal)};}
         public enum StepMode{geometric,manhattan,chebyshev;public StepMode next(){StepMode[] v=values();return v[(ordinal()+1)%v.length];}}
     }
     static final class StructuredRuinLayout{
@@ -704,4 +700,4 @@ public class AdvancedRuinFilter extends GenerateFilter{
             }
         }
     }
-            }
+        }
