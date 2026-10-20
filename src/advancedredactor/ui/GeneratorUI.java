@@ -65,7 +65,9 @@ public class GeneratorUI{
                 if(el==brushSlider||(el instanceof Stack&&((Stack)el).getChildren().contains(brushSlider))){
                     parent.add(el).growX().padTop(4f).row();
                     Table inputBox=new Table();
-                    inputBox.left().padTop(4f).padBottom(6f);
+                    inputBox.left();
+                    inputBox.marginTop(4f);
+                    inputBox.marginBottom(6f);
                     inputBox.add(Core.bundle.get("editor.brushsize.input","Size:")).style(Styles.outlineLabel).padRight(4f);
                     TextField field=new TextField(Strings.fixed(Vars.editor.brushSize,1));
                     field.setFilter((f,c)->Character.isDigit(c)||c=='.');
