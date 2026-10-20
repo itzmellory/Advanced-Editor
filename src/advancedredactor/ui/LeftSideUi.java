@@ -9,6 +9,7 @@ import mindustry.*;
 import mindustry.editor.*;
 import mindustry.game.EventType.*;
 import mindustry.ui.*;
+import advancedredactor.editor.*;
 public class LeftSideUi{
     private static final ObjectSet<Table> hookedTables=new ObjectSet<>();
     public static void init(){
@@ -56,11 +57,15 @@ public class LeftSideUi{
                     field.setFilter((f,c)->Character.isDigit(c)||c=='.');
                     field.changed(()->{
                         float val=Strings.parseFloat(field.getText(),-1f);
-                        if(val>=0.5f&&val<=500f)Vars.editor.brushSize=val;
+                        if(val>=0.5f&&val<=500f){
+                            Vars.editor.brushSize=val;
+                            EditorTools.brushSize=Math.max(1,Math.round(val));
+                        }
                     });
                     slider.moved(v->{
                         int idx=Math.max(0,Math.min(MapEditor.brushSizes.length-1,(int)v));
                         Vars.editor.brushSize=MapEditor.brushSizes[idx];
+                        EditorTools.brushSize=Math.max(1,Math.round(Vars.editor.brushSize));
                         field.setText(Strings.fixed(Vars.editor.brushSize,1));
                     });
                     inputBox.add(field).width(80f).height(32f);
