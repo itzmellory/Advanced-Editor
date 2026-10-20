@@ -15,6 +15,7 @@ import mindustry.graphics.*;
 import mindustry.ui.*;
 import advancedredactor.editor.EditorCore.*;
 import advancedredactor.editor.EditorTools.*;
+import java.lang.reflect.*;
 public class EditorManager{
     public static EditorOperationStack history=new EditorOperationStack();
     public static ChunkedGridBits selection=new ChunkedGridBits(500,500);
@@ -25,15 +26,22 @@ public class EditorManager{
     private static int dragStartX=-1,dragStartY=-1;
     private static BlocksTilesOperation activeDrawOp=null;
     private static final Point2 tmpPt=new Point2();
+    private static Method projectMethod;
     public static void init(){
+        try{
+            projectMethod=MapView.class.getDeclaredMethod("project",float.class,float.class);
+            projectMethod.setAccessible(true);
+        }catch(Throwable ignored){}
         EditorDialogs.initMods();
         Events.run(Trigger.update,EditorManager::update);
         Events.run(Trigger.draw,EditorManager::drawOverlay);
     }
     private static Point2 mouseTile(){
-        if(Vars.ui!=null&&Vars.ui.editor!=null&&Vars.ui.editor.getView()!=null){
-            Point2 p=Vars.ui.editor.getView().project(Core.input.mouseX(),Core.input.mouseY());
-            return tmpPt.set(p.x,p.y);
+        if(projectMethod!=null&&Vars.ui!=null&&Vars.ui.editor!=null&&Vars.ui.editor.getView()!=null){
+            try{
+                Point2 p=(Point2)projectMethod.invoke(Vars.ui.editor.getView(),Core.input.mouseX(),Core.input.mouseY());
+                if(p!=null)return tmpPt.set(p.x,p.y);
+            }catch(Throwable ignored){}
         }
         Vec2 m=Core.input.mouseWorld();
         return tmpPt.set((int)(m.x/8f),(int)(m.y/8f));
@@ -184,4 +192,4 @@ public class EditorManager{
         Core.scene.add(window);
         window.setPosition(Core.graphics.getWidth()-window.getWidth()-10f,Core.graphics.getHeight()-window.getHeight()-10f);
     }
-                     }
+            }
