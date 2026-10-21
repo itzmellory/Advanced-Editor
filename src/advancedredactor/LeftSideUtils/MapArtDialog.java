@@ -2,6 +2,8 @@ package advancedredactor.LeftSideUtils;
 import arc.*;
 import arc.files.*;
 import arc.graphics.*;
+import arc.graphics.g2d.*;
+import arc.scene.style.*;
 import arc.scene.ui.*;
 import arc.scene.ui.layout.*;
 import arc.struct.*;
@@ -19,6 +21,8 @@ public class MapArtDialog{
     public enum LayerMode{floorOnly,wallOnly,floorAndWall}
     public static int artWidth=200,artHeight=200;
     public static Fi selectedFile;
+    public static Texture previewTexture;
+    public static TextureRegion previewRegion;
     public static ArtStyle style=ArtStyle.colored;
     public static LayerMode layerMode=LayerMode.floorOnly;
     public static boolean useAllBlocks=true;
@@ -31,6 +35,13 @@ public class MapArtDialog{
         rebuild[0]=()->{
             main.clearChildren();
             main.defaults().pad(4f).left();
+            if(previewRegion!=null){
+                Table prevBox=new Table(Tex.pane);
+                Image img=new Image(new TextureRegionDrawable(previewRegion));
+                img.setScaling(Scaling.fit);
+                prevBox.add(img).size(160f,160f).pad(4f);
+                main.add(prevBox).colspan(2).center().padBottom(6f).row();
+            }
             main.add(Core.bundle.get("editor.mapart.width","Width (1-3000):"));
             main.field(String.valueOf(artWidth),TextField.TextFieldFilter.digitsOnly,s->artWidth=Math.max(1,Math.min(3000,Strings.parseInt(s,artWidth)))).width(150f).row();
             main.add(Core.bundle.get("editor.mapart.height","Height (1-3000):"));
@@ -44,6 +55,9 @@ public class MapArtDialog{
                         Pixmap p=new Pixmap(file);
                         artWidth=Math.min(800,p.width);
                         artHeight=Math.min(800,p.height);
+                        if(previewTexture!=null)previewTexture.dispose();
+                        previewTexture=new Texture(p);
+                        previewRegion=new TextureRegion(previewTexture);
                         p.dispose();
                     }catch(Exception ignored){}
                     rebuild[0].run();
@@ -147,4 +161,4 @@ public class MapArtDialog{
         bd.addCloseButton();
         bd.show();
     }
-}
+                       }
