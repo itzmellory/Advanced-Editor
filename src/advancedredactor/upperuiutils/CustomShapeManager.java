@@ -5,6 +5,7 @@ import arc.graphics.g2d.*;
 import arc.math.*;
 import arc.math.geom.*;
 import arc.scene.*;
+import arc.scene.ui.layout.*;
 import arc.struct.*;
 import arc.util.*;
 import mindustry.*;
@@ -73,7 +74,7 @@ public class CustomShapeManager{
     }
     public static void traceLine(int x1,int y1,int x2,int y2,Intc2 cons){
         int dx=Math.abs(x2-x1),sx=x1<x2?1:-1;
-        int dy=-Math.abs(y2-y1),sy=y1<y2?1:-1;
+        int dy=-Math.abs(y2-y1),sy=y1<y2 ? 1 : -1;
         int err=dx+dy,x=x1,y=y1;
         while(true){
             cons.get(x,y);
