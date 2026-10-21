@@ -7,8 +7,7 @@ import mindustry.content.*;
 import mindustry.world.*;
 import mindustry.world.blocks.environment.*;
 import advancedredactor.LeftSideUtils.MapArtDialog.*;
-import advancedredactor.editor.EditorCore.ReflectUtil;
-
+import java.lang.reflect.*;
 public class MapArtGenerator{
     public static void generate(Fi file,int targetW,int targetH,ArtStyle style,LayerMode layerMode,boolean useAll,ObjectSet<Block> allowed){
         try{
@@ -16,19 +15,25 @@ public class MapArtGenerator{
             int w=Math.max(1,targetW),h=Math.max(1,targetH);
             Pixmap img=StencilManager.scalePixmap(raw,w,h);
             raw.dispose();
-            if(Vars.editor.width()!=w||Vars.editor.height()!=h){
-                Vars.editor.resize(w,h,0,0);
-            }
-            if(style==ArtStyle.colored){
-                applyColoredArt(img,w,h,layerMode);
-            }else{
-                applyTerrainArt(img,w,h,layerMode,useAll,allowed);
-            }
+            if(Vars.editor.width()!=w||Vars.editor.height()!=h)Vars.editor.resize(w,h,0,0);
+            if(style==ArtStyle.colored)applyColoredArt(img,w,h,layerMode);
+            else applyTerrainArt(img,w,h,layerMode,useAll,allowed);
             img.dispose();
-            Vars.editor.renderer.resize(w,h);
             Vars.editor.clearOp();
         }catch(Exception e){
             Vars.ui.showException("@editor.errorload",e);
+        }
+    }
+    private static void setExtra(Tile t,int val){
+        try{
+            Field f=t.getClass().getField("extraData");
+            f.set(t,val);
+        }catch(Throwable ignored){
+            try{
+                Field f2=t.getClass().getDeclaredField("extraData");
+                f2.setAccessible(true);
+                f2.set(t,val);
+            }catch(Throwable ignored2){}
         }
     }
     private static void applyColoredArt(Pixmap img,int w,int h,LayerMode mode){
@@ -36,7 +41,6 @@ public class MapArtGenerator{
         Block cWallRaw=Vars.content.block("colored-wall");
         final Block cFloor=(cFloorRaw==null)?Blocks.stone:cFloorRaw;
         final Block cWall=(cWallRaw==null)?Blocks.stoneWall:cWallRaw;
-        
         Vars.editor.load(()->{
             for(int ty=0;ty<h;ty++){
                 int sy=h-1-ty;
@@ -66,7 +70,7 @@ public class MapArtGenerator{
                         float lum=0.299f*r+0.587f*g+0.114f*b;
                         t.setBlock((a>32&&lum<95f)?cWall:Blocks.air);
                     }
-                    ReflectUtil.set(t,"extraData",extra);
+                    setExtra(t,extra);
                 }
             }
         });
@@ -82,7 +86,6 @@ public class MapArtGenerator{
         }
         if(floors.isEmpty())floors.add((Floor)Blocks.stone);
         if(walls.isEmpty())walls.add(Blocks.stoneWall);
-        
         Vars.editor.load(()->{
             for(int ty=0;ty<h;ty++){
                 int sy=h-1-ty;
