@@ -13,6 +13,7 @@ import mindustry.ui.*;
 import mindustry.ui.dialogs.*;
 import mindustry.world.*;
 import mindustry.world.blocks.environment.*;
+import java.lang.reflect.*;
 public class MapArtDialog{
     public enum ArtStyle{colored,terrain}
     public enum LayerMode{floorOnly,wallOnly,floorAndWall}
@@ -37,7 +38,7 @@ public class MapArtDialog{
             Label fileLabel=new Label(selectedFile==null?Core.bundle.get("editor.mapart.nofile","No PNG selected"):selectedFile.name());
             fileLabel.setColor(selectedFile==null?Color.lightGray: Color.lime);
             main.button(Core.bundle.get("editor.mapart.selectpng","Choose PNG..."),Icon.fileImage,Styles.flatt,()->{
-                FileChooser.open("png").submit(file->{
+                pickPNG(file->{
                     Core.app.post(()->{
                         selectedFile=file;
                         try{
@@ -85,6 +86,27 @@ public class MapArtDialog{
         d.cont.pane(main).maxHeight(Core.graphics.getHeight()*0.82f);
         d.addCloseButton();
         d.show();
+    }
+    private static void pickPNG(arc.func.Cons<Fi> cons){
+        try{
+            Class<?> fc=Class.forName("mindustry.ui.dialogs.FileChooser");
+            Method m=fc.getMethod("open",String.class);
+            Object fci=m.invoke(null,"png");
+            Method sub=fci.getClass().getMethod("submit",arc.func.Cons.class);
+            sub.invoke(fci,cons);
+            return;
+        }catch(Throwable ignored){}
+        try{
+            for(Method m:Vars.platform.getClass().getMethods()){
+                if(m.getName().equals("showFileChooser")){
+                    if(m.getParameterTypes().length==3){
+                        m.invoke(Vars.platform,true,"png",cons);return;
+                    }else if(m.getParameterTypes().length==4){
+                        m.invoke(Vars.platform,true,"Select PNG","png",cons);return;
+                    }
+                }
+            }
+        }catch(Throwable ignored){}
     }
     private static String getLayerModeName(LayerMode m){
         switch(m){
