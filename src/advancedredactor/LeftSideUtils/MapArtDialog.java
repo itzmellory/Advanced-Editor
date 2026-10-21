@@ -11,6 +11,7 @@ import arc.util.*;
 import mindustry.*;
 import mindustry.content.*;
 import mindustry.gen.*;
+import mindustry.graphics.*;
 import mindustry.ui.*;
 import mindustry.ui.dialogs.*;
 import mindustry.world.*;
@@ -27,8 +28,12 @@ public class MapArtDialog{
     public static LayerMode layerMode=LayerMode.floorOnly;
     public static boolean useAllBlocks=true;
     public static final ObjectSet<Block> allowedBlocks=new ObjectSet<>();
+    private static boolean initializedDefaults=false;
     public static void show(){
-        if(allowedBlocks.isEmpty())initDefaultAllowedBlocks();
+        if(!initializedDefaults){
+            initDefaultAllowedBlocks();
+            initializedDefaults=true;
+        }
         BaseDialog d=new BaseDialog(Core.bundle.get("editor.mapart.title","Pixel Art Generator"));
         Table main=new Table();
         Runnable[] rebuild=new Runnable[1];
@@ -82,11 +87,15 @@ public class MapArtDialog{
                     rebuild[0].run();
                 }).width(190f).height(36f).row();
                 if(!useAllBlocks){
-                    main.button(Core.bundle.get("editor.mapart.selectblocks","Select Allowed Blocks..."),Icon.edit,Styles.flatt,MapArtDialog::showBlockFilterDialog).colspan(2).growX().height(40f).row();
+                    main.button(Core.bundle.get("editor.mapart.selectblocks","Select Allowed Blocks")+" ("+allowedBlocks.size+")",Icon.edit,Styles.flatt,()->showBlockFilterDialog(rebuild[0])).colspan(2).growX().height(40f).row();
                 }
             }
             main.button(Core.bundle.get("editor.mapart.generate","Generate Art on Map"),Icon.ok,Styles.flatt,()->{
                 if(selectedFile==null){Vars.ui.showErrorMessage(Core.bundle.get("editor.mapart.needfile","Please select a PNG file first!"));return;}
+                if(style==ArtStyle.terrain&&!useAllBlocks&&allowedBlocks.isEmpty()){
+                    Vars.ui.showErrorMessage("Select at least 1 allowed block!");
+                    return;
+                }
                 d.hide();
                 Vars.ui.loadAnd(()->MapArtGenerator.generate(selectedFile,artWidth,artHeight,style,layerMode,useAllBlocks,allowedBlocks));
             }).colspan(2).growX().height(46f).padTop(10f).row();
@@ -125,6 +134,7 @@ public class MapArtDialog{
         }
     }
     public static void initDefaultAllowedBlocks(){
+        allowedBlocks.clear();
         for(Block b:Vars.content.blocks())if(isEligibleTerrainBlock(b))allowedBlocks.add(b);
     }
     public static boolean isEligibleTerrainBlock(Block b){
@@ -133,32 +143,82 @@ public class MapArtDialog{
         if(b instanceof Floor&&((Floor)b).isLiquid)return true;
         return(b.isFloor()||b.isStatic())&&b.mapColor!=null&&b.mapColor.a>0.5f&&b.inEditor;
     }
-    private static void showBlockFilterDialog(){
+    private static void showBlockFilterDialog(Runnable onCloseUpdate){
         BaseDialog bd=new BaseDialog(Core.bundle.get("editor.mapart.selectblocks","Select Allowed Blocks"));
         Table grid=new Table();
         final String[] search={""};
+        final int[] tab={0};
+        Label countLabel=new Label("");
+        Runnable updateCount=()->countLabel.setText("Selected: [accent]"+allowedBlocks.size+"[] blocks");
         Runnable rebuildGrid=()->{
             grid.clearChildren();
+            updateCount.run();
             int cols=0;
             String q=search[0].toLowerCase().trim();
             for(Block b:Vars.content.blocks()){
                 if(!isEligibleTerrainBlock(b))continue;
+                if(tab[0]==1&&!b.isFloor())continue;
+                if(tab[0]==2&&b.isFloor())continue;
                 if(!q.isEmpty()&&!b.localizedName.toLowerCase().contains(q)&&!b.name.toLowerCase().contains(q))continue;
-                Button btn=grid.button(bt->bt.image(b.uiIcon).size(28f),Styles.flati,()->{
-                    if(allowedBlocks.contains(b))allowedBlocks.remove(b);else allowedBlocks.add(b);
-                }).size(40f).pad(2f).tooltip(b.localizedName).get();
-                btn.update(()->btn.setColor(allowedBlocks.contains(b)?Color.white:Color.darkGray));
-                if(++cols%10==0)grid.row();
+                Button btn=new Button(Styles.flatTogglet);
+                btn.setChecked(allowedBlocks.contains(b));
+                Image iconImg=new Image(b.uiIcon);
+                iconImg.setScaling(Scaling.fit);
+                Label checkMark=new Label(()->allowedBlocks.contains(b)?"[lime]✔[]":"");
+                checkMark.setAlignment(Align.topRight);
+                Stack st=new Stack(iconImg,checkMark);
+                btn.add(st).size(34f);
+                btn.clicked(()->{
+                    if(allowedBlocks.contains(b))allowedBlocks.remove(b);
+                    else allowedBlocks.add(b);
+                    btn.setChecked(allowedBlocks.contains(b));
+                    updateCount.run();
+                });
+                btn.update(()->{
+                    boolean sel=allowedBlocks.contains(b);
+                    btn.setChecked(sel);
+                    iconImg.setColor(sel?Color.white:new Color(0.25f,0.25f,0.25f,0.55f));
+                });
+                grid.add(btn).size(48f).pad(3f).tooltip(b.localizedName);
+                if(++cols%8==0)grid.row();
             }
         };
-        bd.cont.table(top->{
-            top.button("All",Styles.flatt,()->{for(Block b:Vars.content.blocks())if(isEligibleTerrainBlock(b))allowedBlocks.add(b);}).size(100f,34f).pad(2f);
-            top.button("Clear",Styles.flatt,allowedBlocks::clear).size(100f,34f).pad(2f);
+        bd.cont.add(countLabel).padBottom(4f).row();
+        bd.cont.table(tabs->{
+            tabs.defaults().size(110f,36f).pad(2f);
+            tabs.button("All",Styles.flatTogglet,()->{tab[0]=0;rebuildGrid.run();}).update(b->b.setChecked(tab[0]==0));
+            tabs.button("Floors",Styles.flatTogglet,()->{tab[0]=1;rebuildGrid.run();}).update(b->b.setChecked(tab[0]==1));
+            tabs.button("Walls",Styles.flatTogglet,()->{tab[0]=2;rebuildGrid.run();}).update(b->b.setChecked(tab[0]==2));
         }).row();
-        bd.cont.field("",s->{search[0]=s;rebuildGrid.run();}).width(320f).padBottom(6f).row();
+        bd.cont.table(top->{
+            top.defaults().size(120f,36f).pad(2f);
+            top.button("Select All",Styles.flatt,()->{
+                for(Block b:Vars.content.blocks()){
+                    if(!isEligibleTerrainBlock(b))continue;
+                    if(tab[0]==1&&!b.isFloor())continue;
+                    if(tab[0]==2&&b.isFloor())continue;
+                    allowedBlocks.add(b);
+                }
+                rebuildGrid.run();
+            });
+            top.button("Clear All",Styles.flatt,()->{
+                if(tab[0]==0)allowedBlocks.clear();
+                else{
+                    Seq<Block> rem=new Seq<>();
+                    for(Block b:allowedBlocks){
+                        if(tab[0]==1&&b.isFloor())rem.add(b);
+                        if(tab[0]==2&&!b.isFloor())rem.add(b);
+                    }
+                    for(Block b:rem)allowedBlocks.remove(b);
+                }
+                rebuildGrid.run();
+            });
+        }).row();
+        bd.cont.field("",s->{search[0]=s;rebuildGrid.run();}).width(340f).padBottom(6f).row();
         rebuildGrid.run();
-        bd.cont.pane(grid).size(Math.min(Core.graphics.getWidth()*0.9f,480f),Math.min(Core.graphics.getHeight()*0.7f,360f));
+        bd.cont.pane(grid).size(Math.min(Core.graphics.getWidth()*0.9f,460f),Math.min(Core.graphics.getHeight()*0.65f,340f));
+        bd.hidden(onCloseUpdate);
         bd.addCloseButton();
         bd.show();
     }
-                       }
+}
