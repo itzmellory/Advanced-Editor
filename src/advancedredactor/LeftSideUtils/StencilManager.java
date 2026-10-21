@@ -147,6 +147,27 @@ public class StencilManager{
         }
         return dst;
     }
+    private static void pickPNG(arc.func.Cons<Fi> cons){
+        try{
+            Class<?> fc=Class.forName("mindustry.ui.dialogs.FileChooser");
+            Method m=fc.getMethod("open",String.class);
+            Object fci=m.invoke(null,"png");
+            Method sub=fci.getClass().getMethod("submit",arc.func.Cons.class);
+            sub.invoke(fci,cons);
+            return;
+        }catch(Throwable ignored){}
+        try{
+            for(Method m:Vars.platform.getClass().getMethods()){
+                if(m.getName().equals("showFileChooser")){
+                    if(m.getParameterTypes().length==3){
+                        m.invoke(Vars.platform,true,"png",cons);return;
+                    }else if(m.getParameterTypes().length==4){
+                        m.invoke(Vars.platform,true,"Select PNG","png",cons);return;
+                    }
+                }
+            }
+        }catch(Throwable ignored){}
+    }
     public static void showDialog(){
         BaseDialog d=new BaseDialog(Core.bundle.get("editor.stencil.title","Stencil Setup"));
         Table t=new Table();
@@ -173,7 +194,7 @@ public class StencilManager{
             if(currentFile!=null)loadStencil(currentFile,targetW,targetH);
         }).colspan(2).growX().height(36f).row();
         t.button(Core.bundle.get("editor.stencil.selectpng","Select PNG..."),Icon.fileImage,Styles.flatt,()->{
-            FileChooser.open("png").submit(file->{
+            pickPNG(file->{
                 Core.app.post(()->loadStencil(file,targetW,targetH));
             });
         }).colspan(2).growX().height(42f).row();
