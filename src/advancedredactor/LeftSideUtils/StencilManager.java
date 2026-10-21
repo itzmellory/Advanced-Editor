@@ -62,10 +62,10 @@ public class StencilManager{
                     float oy=offsetYField.getFloat(view);
                     float zoom=zoomField.getFloat(view);
                     float size=Math.min(view.getWidth(),view.getHeight());
-                    float centerx=view.x+view.getWidth()/2f+ox*zoom;
-                    float centery=view.y+view.getHeight()/2f+oy*zoom;
                     float mapW=Vars.editor.width(),mapH=Vars.editor.height();
                     if(mapW<=0||mapH<=0)return;
+                    float centerx=view.x+view.getWidth()/2f+ox*zoom;
+                    float centery=view.y+view.getHeight()/2f+oy*zoom;
                     float scl=size/Math.max(mapW,mapH)*zoom;
                     float rx=centerx-mapW/2f*scl+offsetX*scl;
                     float ry=centery-mapH/2f*scl+offsetY*scl;
@@ -173,7 +173,7 @@ public class StencilManager{
             if(currentFile!=null)loadStencil(currentFile,targetW,targetH);
         }).colspan(2).growX().height(36f).row();
         t.button(Core.bundle.get("editor.stencil.selectpng","Select PNG..."),Icon.fileImage,Styles.flatt,()->{
-            Vars.platform.showFileChooser(true,"png",file->{
+            FileChooser.open("png").submit(file->{
                 Core.app.post(()->loadStencil(file,targetW,targetH));
             });
         }).colspan(2).growX().height(42f).row();
@@ -202,4 +202,4 @@ public class StencilManager{
         d.addCloseButton();
         d.show();
     }
-                      }
+}
