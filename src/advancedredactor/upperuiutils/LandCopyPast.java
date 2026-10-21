@@ -30,13 +30,12 @@ public class LandCopyPast{
     public static Clip clipboard;
     public static boolean copyFloor=true,copyOre=true,copyBlock=true;
     public static boolean overrideBlock=true,overrideOre=true,useEditorTeam=false;
-    private static boolean selecting=false,drawingCustom=false,drawingLine=false;
+    private static boolean selecting=false,drawingCustom=false,drawingLine=false,draggingHandle=false;
     private static int selStartX,selStartY,selEndX,selEndY;
     private static int lineStartX,lineStartY,lineEndX,lineEndY;
     private static int lastDrawX=-1,lastDrawY=-1;
-    private static boolean mobileDragMode=false,mobileDragging=false;
     private static int pasteOriginX=0,pasteOriginY=0,dragStartTileX,dragStartTileY,dragStartOriginX,dragStartOriginY;
-    private static Table mobilePasteBar;
+    private static Table pasteActionBar;
     private static Element hookedView;
     private static Field extraDataField,floorDataField,overlayDataField;
     static{
@@ -46,6 +45,9 @@ public class LandCopyPast{
     }
     public static void init(){
         Events.run(Trigger.update,LandCopyPast::update);
+    }
+    public static boolean isBlockingPan(){
+        return mode!=Mode.none||selecting||drawingCustom||drawingLine||draggingHandle;
     }
     public static int getExtra(Tile t){
         try{if(extraDataField!=null)return extraDataField.getInt(t);}catch(Throwable ignored){}
@@ -80,20 +82,20 @@ public class LandCopyPast{
     public static void setMode(Mode m){
         mode=m;
         selecting=false;
-        mobileDragging=false;
+        draggingHandle=false;
         if(m!=Mode.none)CustomShapeManager.line45Mode=false;
         if(m==Mode.paste&&clipboard!=null){
             pasteOriginX=Math.max(0,(Vars.editor.width()-clipboard.width)/2);
             pasteOriginY=Math.max(0,(Vars.editor.height()-clipboard.height)/2);
-            rebuildMobilePasteBar();
+            rebuildPasteBar();
         }else{
-            removeMobilePasteBar();
+            removePasteBar();
         }
     }
     private static void update(){
         if(Vars.ui==null||Vars.ui.editor==null||!Vars.ui.editor.isShown()){
             hookedView=null;
-            removeMobilePasteBar();
+            removePasteBar();
             return;
         }
         MapView view=Vars.ui.editor.getView();
@@ -110,53 +112,72 @@ public class LandCopyPast{
             injectViewHooks(view);
         }
     }
-    private static void rebuildMobilePasteBar(){
-        removeMobilePasteBar();
+    private static void rebuildPasteBar(){
+        removePasteBar();
         if(Vars.ui==null||Vars.ui.editor==null||Vars.ui.editor.getView()==null)return;
         Group parent=Vars.ui.editor.getView().parent;
-        mobilePasteBar=new Table();
-        mobilePasteBar.setFillParent(true);
-        mobilePasteBar.bottom();
-        mobilePasteBar.touchable=Touchable.childrenOnly;
+        pasteActionBar=new Table();
+        pasteActionBar.setFillParent(true);
+        pasteActionBar.bottom();
+        pasteActionBar.touchable=Touchable.childrenOnly;
         Table box=new Table(Tex.button);
         box.margin(4f);
         box.defaults().height(42f).pad(3f);
-        TextButton dragBtn=box.button(Core.bundle.get("upper.dragbtn","Move / Drag"),Icon.move,Styles.flatTogglet,()->mobileDragMode=!mobileDragMode).width(145f).get();
-        dragBtn.update(()->dragBtn.setChecked(mobileDragMode));
-        box.button(Core.bundle.get("upper.apply","Paste Here"),Icon.ok,Styles.flatt,()->pasteAt(pasteOriginX,pasteOriginY)).width(135f);
-        box.button(Core.bundle.get("upper.cancel","Cancel"),Icon.cancel,Styles.flatt,()->setMode(Mode.none)).width(110f);
-        mobilePasteBar.add(box).padBottom(12f);
-        parent.addChild(mobilePasteBar);
+        box.button(Core.bundle.get("upper.apply","Paste Here"),Icon.ok,Styles.flatt,()->pasteAt(pasteOriginX,pasteOriginY)).width(150f);
+        box.button(Core.bundle.get("upper.cancel","Cancel"),Icon.cancel,Styles.flatt,()->setMode(Mode.none)).width(120f);
+        pasteActionBar.add(box).padBottom(12f);
+        parent.addChild(pasteActionBar);
     }
-    private static void removeMobilePasteBar(){
-        if(mobilePasteBar!=null){
-            mobilePasteBar.remove();
-            mobilePasteBar=null;
+    private static void removePasteBar(){
+        if(pasteActionBar!=null){
+            pasteActionBar.remove();
+            pasteActionBar=null;
         }
     }
-    private static Point2 project(MapView view,float x,float y){
+    public static Vec2 viewMapGeometry(MapView view,float[] out){
         try{
             Float ox=(Float)Reflect.get(view,"offsetx");
             Float oy=(Float)Reflect.get(view,"offsety");
             Float zoom=(Float)Reflect.get(view,"zoom");
-            if(ox==null||oy==null||zoom==null)return new Point2(0,0);
+            if(ox==null||oy==null||zoom==null)return null;
             float mapW=Vars.editor.width(),mapH=Vars.editor.height();
+            if(mapW<=0||mapH<=0)return null;
+            float ratio=1f/(mapW/mapH);
             float size=Math.min(view.getWidth(),view.getHeight());
-            float scl=size/Math.max(mapW,mapH)*zoom;
-            float cx=view.getWidth()/2f+ox*zoom;
-            float cy=view.getHeight()/2f+oy*zoom;
-            float mapBlX=cx-mapW*scl/2f;
-            float mapBlY=cy-mapH*scl/2f;
-            int tx=Mathf.floor((x-mapBlX)/scl);
-            int ty=Mathf.floor((y-mapBlY)/scl);
-            return new Point2(tx,ty);
+            float sclW=size*zoom;
+            float sclH=size*zoom*ratio;
+            float tileW=sclW/mapW;
+            float tileH=sclH/mapH;
+            float mapBlX=view.getWidth()/2f+ox*zoom-sclW/2f;
+            float mapBlY=view.getHeight()/2f+oy*zoom-sclH/2f;
+            out[0]=mapBlX;out[1]=mapBlY;out[2]=tileW;out[3]=tileH;
+            return Tmp.v1.set(mapBlX,mapBlY);
         }catch(Throwable e){
-            return new Point2(0,0);
+            return null;
         }
     }
+    private static Point2 project(MapView view,float x,float y){
+        float[] g=new float[4];
+        if(viewMapGeometry(view,g)==null)return new Point2(0,0);
+        int tx=Mathf.floor((x-g[0])/g[2]);
+        int ty=Mathf.floor((y-g[1])/g[3]);
+        return new Point2(tx,ty);
+    }
     private static Point2 mouseTile(MapView view){
-        Vec2 local=view.screenToLocalCoordinates(Tmp.v1.set(Core.input.mouseX(),Core.input.mouseY()));
+        Vec2 local=view.screenToLocalCoordinates(Tmp.v2.set(Core.input.mouseX(),Core.input.mouseY()));
         return project(view,local.x,local.y);
+    }
+    private static boolean hitPasteCornerHandle(MapView view,float x,float y){
+        if(clipboard==null)return false;
+        float[] g=new float[4];
+        if(viewMapGeometry(view,g)==null)return false;
+        float rx=g[0]+pasteOriginX*g[2];
+        float ry=g[1]+pasteOriginY*g[3];
+        float rw=clipboard.width*g[2];
+        float rh=clipboard.height*g[3];
+        float hx=rx+rw,hy=ry+rh;
+        float hs=Scl.scl(44f);
+        return Mathf.within(x,y,hx,hy,hs)||(x>=rx&&x<=rx+rw&&y>=ry&&y<=ry+rh);
     }
     private static boolean shouldInterceptVanillaTool(EditorTool tool){
         if(tool==EditorTool.line&&(CustomShapeManager.line45Mode||CustomShapeManager.currentShape!=BrushShape.circle||Vars.editor.brushSize>20f))return true;
@@ -178,6 +199,14 @@ public class LandCopyPast{
         overlay.setFillParent(true);
         overlay.touchable=Touchable.disabled;
         parent.addChild(overlay);
+        view.addCaptureListener(new ElementGestureListener(){
+            @Override public void pan(InputEvent event,float x,float y,float deltaX,float deltaY){
+                if(isBlockingPan()||shouldInterceptVanillaTool(view.getTool())){
+                    event.cancel();
+                    event.stop();
+                }
+            }
+        });
         view.addCaptureListener(new InputListener(){
             @Override public boolean touchDown(InputEvent event,float x,float y,int pointer,KeyCode button){
                 if(pointer!=0||button!=KeyCode.mouseLeft)return false;
@@ -186,28 +215,22 @@ public class LandCopyPast{
                     selecting=true;
                     selStartX=selEndX=Mathf.clamp(p.x,0,Vars.editor.width()-1);
                     selStartY=selEndY=Mathf.clamp(p.y,0,Vars.editor.height()-1);
+                    event.cancel();
                     event.stop();
                     return true;
                 }
                 if(mode==Mode.paste&&clipboard!=null){
-                    if(Vars.mobile||mobileDragMode){
-                        if(mobileDragMode){
-                            mobileDragging=true;
-                            dragStartTileX=p.x;
-                            dragStartTileY=p.y;
-                            dragStartOriginX=pasteOriginX;
-                            dragStartOriginY=pasteOriginY;
-                            event.stop();
-                            return true;
-                        }
-                        return false;
-                    }else{
-                        pasteOriginX=p.x-clipboard.width/2;
-                        pasteOriginY=p.y-clipboard.height/2;
-                        pasteAt(pasteOriginX,pasteOriginY);
+                    if(hitPasteCornerHandle(view,x,y)){
+                        draggingHandle=true;
+                        dragStartTileX=p.x;
+                        dragStartTileY=p.y;
+                        dragStartOriginX=pasteOriginX;
+                        dragStartOriginY=pasteOriginY;
+                        event.cancel();
                         event.stop();
                         return true;
                     }
+                    return false;
                 }
                 EditorTool tool=view.getTool();
                 if(shouldInterceptVanillaTool(tool)){
@@ -221,6 +244,7 @@ public class LandCopyPast{
                         lastDrawY=p.y;
                         applyToolStamp(tool,p.x,p.y);
                     }
+                    event.cancel();
                     event.stop();
                     return true;
                 }
@@ -232,12 +256,14 @@ public class LandCopyPast{
                 if(selecting&&(mode==Mode.copy||mode==Mode.cut)){
                     selEndX=Mathf.clamp(p.x,0,Vars.editor.width()-1);
                     selEndY=Mathf.clamp(p.y,0,Vars.editor.height()-1);
+                    event.cancel();
                     event.stop();
                     return;
                 }
-                if(mode==Mode.paste&&mobileDragging){
+                if(mode==Mode.paste&&draggingHandle){
                     pasteOriginX=dragStartOriginX+(p.x-dragStartTileX);
                     pasteOriginY=dragStartOriginY+(p.y-dragStartTileY);
+                    event.cancel();
                     event.stop();
                     return;
                 }
@@ -252,6 +278,7 @@ public class LandCopyPast{
                         lineEndX=tx;
                         lineEndY=ty;
                     }
+                    event.cancel();
                     event.stop();
                     return;
                 }
@@ -260,6 +287,7 @@ public class LandCopyPast{
                     CustomShapeManager.traceLine(lastDrawX,lastDrawY,p.x,p.y,(lx,ly)->applyToolStamp(tool,lx,ly));
                     lastDrawX=p.x;
                     lastDrawY=p.y;
+                    event.cancel();
                     event.stop();
                 }
             }
@@ -272,11 +300,13 @@ public class LandCopyPast{
                     captureSelection(mode==Mode.cut);
                     selecting=false;
                     setMode(Mode.paste);
+                    event.cancel();
                     event.stop();
                     return;
                 }
-                if(mobileDragging){
-                    mobileDragging=false;
+                if(draggingHandle){
+                    draggingHandle=false;
+                    event.cancel();
                     event.stop();
                     return;
                 }
@@ -286,6 +316,7 @@ public class LandCopyPast{
                     drawingLine=false;
                     Vars.editor.flushOp();
                     Vars.ui.editor.resetSaved();
+                    event.cancel();
                     event.stop();
                     return;
                 }
@@ -293,6 +324,7 @@ public class LandCopyPast{
                     drawingCustom=false;
                     Vars.editor.flushOp();
                     Vars.ui.editor.resetSaved();
+                    event.cancel();
                     event.stop();
                 }
             }
@@ -346,23 +378,14 @@ public class LandCopyPast{
     }
     private static void drawOverlayContent(MapView view){
         try{
-            Float ox=(Float)Reflect.get(view,"offsetx");
-            Float oy=(Float)Reflect.get(view,"offsety");
-            Float zoom=(Float)Reflect.get(view,"zoom");
-            if(ox==null||oy==null||zoom==null)return;
-            float mapW=Vars.editor.width(),mapH=Vars.editor.height();
-            if(mapW<=0||mapH<=0)return;
-            float size=Math.min(view.getWidth(),view.getHeight());
-            float scl=size/Math.max(mapW,mapH)*zoom;
-            float cx=view.x+view.getWidth()/2f+ox*zoom;
-            float cy=view.y+view.getHeight()/2f+oy*zoom;
-            float mapBlX=cx-mapW*scl/2f;
-            float mapBlY=cy-mapH*scl/2f;
+            float[] g=new float[4];
+            if(viewMapGeometry(view,g)==null)return;
+            float mapBlX=view.x+g[0],mapBlY=view.y+g[1],tileW=g[2],tileH=g[3];
             if(selecting&&(mode==Mode.copy||mode==Mode.cut)){
                 int minX=Math.min(selStartX,selEndX),maxX=Math.max(selStartX,selEndX)+1;
                 int minY=Math.min(selStartY,selEndY),maxY=Math.max(selStartY,selEndY)+1;
-                float rx=mapBlX+minX*scl,ry=mapBlY+minY*scl;
-                float rw=(maxX-minX)*scl,rh=(maxY-minY)*scl;
+                float rx=mapBlX+minX*tileW,ry=mapBlY+minY*tileH;
+                float rw=(maxX-minX)*tileW,rh=(maxY-minY)*tileH;
                 Draw.color(Pal.accent,0.22f);
                 Fill.crect(rx,ry,rw,rh);
                 Draw.color(Pal.accent);
@@ -371,22 +394,24 @@ public class LandCopyPast{
                 Draw.reset();
             }
             if(mode==Mode.paste&&clipboard!=null){
-                int gx=pasteOriginX,gy=pasteOriginY;
-                if(!Vars.mobile&&!mobileDragMode){
-                    Point2 mp=mouseTile(view);
-                    gx=mp.x-clipboard.width/2;
-                    gy=mp.y-clipboard.height/2;
-                }
                 clipboard.ensureTexture();
-                float rx=mapBlX+gx*scl,ry=mapBlY+gy*scl;
-                float rw=clipboard.width*scl,rh=clipboard.height*scl;
+                float rx=mapBlX+pasteOriginX*tileW,ry=mapBlY+pasteOriginY*tileH;
+                float rw=clipboard.width*tileW,rh=clipboard.height*tileH;
                 if(clipboard.previewRegion!=null){
                     Draw.color(1f,1f,1f,0.65f);
                     Draw.rect(clipboard.previewRegion,rx+rw/2f,ry+rh/2f,rw,rh);
                 }
-                Draw.color(mobileDragMode?Color.sky:Pal.accent);
+                Draw.color(draggingHandle?Color.sky:Pal.accent);
                 Lines.stroke(2f);
                 Lines.rect(rx,ry,rw,rh);
+                float hs=Scl.scl(28f);
+                float hx=rx+rw,hy=ry+rh;
+                Draw.color(Pal.darkerGray,0.9f);
+                Fill.rect(hx,hy,hs,hs);
+                Draw.color(draggingHandle?Color.sky:Pal.accent);
+                Lines.rect(hx-hs/2f,hy-hs/2f,hs,hs);
+                Draw.color(Color.white);
+                Draw.rect(Icon.move.getRegion(),hx,hy,hs*0.75f,hs*0.75f);
                 Draw.reset();
             }
             if(mode==Mode.none){
@@ -581,10 +606,6 @@ public class LandCopyPast{
         t.check("Override Existing Blocks",overrideBlock,v->overrideBlock=v).row();
         t.check("Override Existing Ores",overrideOre,v->overrideOre=v).row();
         t.check("Use Active Editor Team",useEditorTeam,v->useEditorTeam=v).row();
-        t.check("Touch Drag Mode (Mobile/PC)",mobileDragMode,v->{
-            mobileDragMode=v;
-            if(mode==Mode.paste)rebuildMobilePasteBar();
-        }).row();
         d.cont.add(t);
         d.addCloseButton();
         d.show();
@@ -646,4 +667,4 @@ public class LandCopyPast{
             }
         }
     }
-                                        }
+                }
