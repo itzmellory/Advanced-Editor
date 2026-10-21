@@ -32,10 +32,20 @@ public class StencilManager{
         Events.run(Trigger.update,StencilManager::update);
     }
     private static void update(){
-        if(Vars.ui==null||Vars.ui.editor==null||!Vars.ui.editor.isShown())return;
+        if(Vars.ui==null||Vars.ui.editor==null||!Vars.ui.editor.isShown()){
+            hookedView=null;
+            return;
+        }
         MapView view=Vars.ui.editor.getView();
         if(view==null||view.parent==null)return;
-        if(hookedView!=view){
+        boolean hasOverlay=false;
+        for(Element e:view.parent.getChildren()){
+            if("stencil-overlay".equals(e.name)){
+                hasOverlay=true;
+                break;
+            }
+        }
+        if(hookedView!=view||!hasOverlay){
             hookedView=view;
             injectOverlayElement(view);
         }
@@ -72,6 +82,7 @@ public class StencilManager{
                 }catch(Throwable ignored){}
             }
         };
+        overlay.name="stencil-overlay";
         parent.addChild(overlay);
         view.addCaptureListener(new InputListener(){
             @Override public boolean touchDown(InputEvent event,float x,float y,int pointer,KeyCode button){
