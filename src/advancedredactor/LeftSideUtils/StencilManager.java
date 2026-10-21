@@ -74,10 +74,7 @@ public class StencilManager{
                     if(ScissorStack.push(Tmp.r1.set(view.x,view.y,view.getWidth(),view.getHeight()))){
                         Draw.color(1f,1f,1f,opacity);
                         Draw.rect(Draw.wrap(texture),rx+rw/2f,ry+rh/2f,rw,rh);
-                        if(moveMode){
-                            Lines.stroke(2f,Pal.accent);
-                            Lines.rect(rx,ry,rw,rh);
-                        }
+                        if(moveMode){Lines.stroke(2f,Pal.accent);Lines.rect(rx,ry,rw,rh);}
                         Draw.reset();
                         ScissorStack.pop();
                     }
@@ -92,27 +89,18 @@ public class StencilManager{
                 if(!enabled||texture==null||!moveMode||button!=KeyCode.mouseLeft)return false;
                 Point2 p=project(view,x,y);
                 if(p!=null){
-                    dragging=true;
-                    dragStartWorldX=p.x;
-                    dragStartWorldY=p.y;
-                    startOffsetX=offsetX;
-                    startOffsetY=offsetY;
-                    event.stop();
-                    return true;
+                    dragging=true;dragStartWorldX=p.x;dragStartWorldY=p.y;
+                    startOffsetX=offsetX;startOffsetY=offsetY;
+                    event.stop();return true;
                 }
                 return false;
             }
             @Override public void touchDragged(InputEvent event,float x,float y,int pointer){
                 if(!dragging)return;
                 Point2 p=project(view,x,y);
-                if(p!=null){
-                    offsetX=startOffsetX+(p.x-dragStartWorldX);
-                    offsetY=startOffsetY+(p.y-dragStartWorldY);
-                }
+                if(p!=null){offsetX=startOffsetX+(p.x-dragStartWorldX);offsetY=startOffsetY+(p.y-dragStartWorldY);}
             }
-            @Override public void touchUp(InputEvent event,float x,float y,int pointer,KeyCode button){
-                dragging=false;
-            }
+            @Override public void touchUp(InputEvent event,float x,float y,int pointer,KeyCode button){dragging=false;}
         });
     }
     private static Point2 project(MapView view,float x,float y){
@@ -122,56 +110,48 @@ public class StencilManager{
     public static void loadStencil(Fi file,int w,int h){
         try{
             Pixmap src=new Pixmap(file);
-            targetW=Math.max(1,w);
-            targetH=Math.max(1,h);
+            targetW=Math.max(1,w);targetH=Math.max(1,h);
             Pixmap scaled=scalePixmap(src,targetW,targetH);
             src.dispose();
             if(texture!=null)texture.dispose();
             texture=new Texture(scaled);
             scaled.dispose();
-            currentFile=file;
-            enabled=true;
-        }catch(Exception e){
-            Vars.ui.showException("@editor.errorload",e);
-        }
+            currentFile=file;enabled=true;
+        }catch(Exception e){Vars.ui.showException("@editor.errorload",e);}
     }
     public static Pixmap scalePixmap(Pixmap src,int w,int h){
         Pixmap dst=new Pixmap(w,h);
         int sw=src.width,sh=src.height;
         for(int y=0;y<h;y++){
             int sy=Math.min(sh-1,(y*sh)/h);
-            for(int x=0;x<w;x++){
-                int sx=Math.min(sw-1,(x*sw)/w);
-                dst.setRaw(x,y,src.getRaw(sx,sy));
-            }
+            for(int x=0;x<w;x++)dst.setRaw(x,y,src.getRaw(Math.min(sw-1,(x*sw)/w),sy));
         }
         return dst;
     }
     private static void pickPNG(arc.func.Cons<Fi> cons){
         try{
-            Class<?> fc=Class.forName("mindustry.ui.dialogs.FileChooser");
-            Method m=fc.getMethod("open",String.class);
-            Object fci=m.invoke(null,"png");
-            Method sub=fci.getClass().getMethod("submit",arc.func.Cons.class);
-            sub.invoke(fci,cons);
-            return;
+            Class<?> fc=null;
+            try{fc=Class.forName("mindustry.ui.FileChooser");}catch(Throwable ignored){}
+            if(fc==null)fc=Class.forName("mindustry.ui.dialogs.FileChooser");
+            Method op=null;
+            for(Method m:fc.getMethods())if(m.getName().equals("open")){op=m;break;}
+            if(op!=null){
+                Object fci=op.getParameterTypes()[0]==String.class?op.invoke(null,"png"):op.invoke(null,(Object)new String[]{"png"});
+                for(Method m:fci.getClass().getMethods())if(m.getName().equals("submit")){m.invoke(fci,cons);return;}
+            }
         }catch(Throwable ignored){}
         try{
-            for(Method m:Vars.platform.getClass().getMethods()){
+            for(Method m:mindustry.core.Platform.class.getMethods()){
                 if(m.getName().equals("showFileChooser")){
-                    if(m.getParameterTypes().length==3){
-                        m.invoke(Vars.platform,true,"png",cons);return;
-                    }else if(m.getParameterTypes().length==4){
-                        m.invoke(Vars.platform,true,"Select PNG","png",cons);return;
-                    }
+                    if(m.getParameterTypes().length==3){m.invoke(Vars.platform,true,"png",cons);return;}
+                    if(m.getParameterTypes().length==4){m.invoke(Vars.platform,true,"Select PNG","png",cons);return;}
                 }
             }
         }catch(Throwable ignored){}
     }
     public static void showDialog(){
         BaseDialog d=new BaseDialog(Core.bundle.get("editor.stencil.title","Stencil Setup"));
-        Table t=new Table();
-        t.defaults().pad(4f).left();
+        Table t=new Table();t.defaults().pad(4f).left();
         if(targetW<=0)targetW=Vars.editor.width();
         if(targetH<=0)targetH=Vars.editor.height();
         t.add(Core.bundle.get("editor.stencil.width","Width (tiles):"));
@@ -187,16 +167,12 @@ public class StencilManager{
         }).width(140f).get();
         t.row();
         t.button(Core.bundle.get("editor.stencil.fitmap","Fit Map Size"),Styles.flatt,()->{
-            targetW=Vars.editor.width();
-            targetH=Vars.editor.height();
-            wf.setText(String.valueOf(targetW));
-            hf.setText(String.valueOf(targetH));
+            targetW=Vars.editor.width();targetH=Vars.editor.height();
+            wf.setText(String.valueOf(targetW));hf.setText(String.valueOf(targetH));
             if(currentFile!=null)loadStencil(currentFile,targetW,targetH);
         }).colspan(2).growX().height(36f).row();
         t.button(Core.bundle.get("editor.stencil.selectpng","Select PNG..."),Icon.fileImage,Styles.flatt,()->{
-            pickPNG(file->{
-                Core.app.post(()->loadStencil(file,targetW,targetH));
-            });
+            pickPNG(file->Core.app.post(()->loadStencil(file,targetW,targetH)));
         }).colspan(2).growX().height(42f).row();
         t.add(Core.bundle.get("editor.stencil.opacity","Opacity:"));
         t.slider(0.05f,1f,0.05f,opacity,v->opacity=v).width(160f).row();
@@ -207,20 +183,16 @@ public class StencilManager{
         TextField oyf=t.field(Strings.fixed(offsetY,0),s->offsetY=Strings.parseFloat(s,offsetY)).width(140f).get();
         t.row();
         t.button(Core.bundle.get("editor.stencil.center","Center on Map"),Styles.flatt,()->{
-            offsetX=(Vars.editor.width()-targetW)/2f;
-            offsetY=(Vars.editor.height()-targetH)/2f;
-            oxf.setText(Strings.fixed(offsetX,0));
-            oyf.setText(Strings.fixed(offsetY,0));
+            offsetX=(Vars.editor.width()-targetW)/2f;offsetY=(Vars.editor.height()-targetH)/2f;
+            oxf.setText(Strings.fixed(offsetX,0));oyf.setText(Strings.fixed(offsetY,0));
         }).colspan(2).growX().height(36f).row();
         t.check(Core.bundle.get("editor.stencil.enable","Show Stencil"),enabled,v->enabled=v).colspan(2).left().row();
         t.check(Core.bundle.get("editor.stencil.movemode","Drag / Move Mode"),moveMode,v->moveMode=v).colspan(2).left().row();
         t.button(Core.bundle.get("editor.stencil.clear","Clear Stencil"),Icon.trash,Styles.flatt,()->{
             if(texture!=null){texture.dispose();texture=null;}
-            currentFile=null;
-            moveMode=false;
+            currentFile=null;moveMode=false;
         }).colspan(2).growX().height(38f).padTop(6f).row();
         d.cont.pane(t).maxHeight(Core.graphics.getHeight()*0.8f);
-        d.addCloseButton();
-        d.show();
+        d.addCloseButton();d.show();
     }
 }
