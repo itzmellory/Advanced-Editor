@@ -37,7 +37,7 @@ public class MapArtDialog{
             Label fileLabel=new Label(selectedFile==null?Core.bundle.get("editor.mapart.nofile","No PNG selected"):selectedFile.name());
             fileLabel.setColor(selectedFile==null?Color.lightGray: Color.lime);
             main.button(Core.bundle.get("editor.mapart.selectpng","Choose PNG..."),Icon.fileImage,Styles.flatt,()->{
-                Vars.platform.showFileChooser(true,"png",file->{
+                FileChooser.open("png").submit(file->{
                     Core.app.post(()->{
                         selectedFile=file;
                         try{
@@ -133,4 +133,4 @@ public class MapArtDialog{
         bd.addCloseButton();
         bd.show();
     }
-          }
+}
