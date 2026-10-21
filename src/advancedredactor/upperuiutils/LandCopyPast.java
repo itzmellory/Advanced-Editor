@@ -38,12 +38,11 @@ public class LandCopyPast{
     private static int pasteOriginX=0,pasteOriginY=0,dragStartTileX,dragStartTileY,dragStartOriginX,dragStartOriginY;
     private static Table mobilePasteBar;
     private static Element hookedView;
-    private static Field extraDataField;
+    private static Field extraDataField,floorDataField,overlayDataField;
     static{
-        try{
-            extraDataField=Tile.class.getDeclaredField("extraData");
-            extraDataField.setAccessible(true);
-        }catch(Throwable ignored){}
+        try{extraDataField=Tile.class.getDeclaredField("extraData");extraDataField.setAccessible(true);}catch(Throwable ignored){}
+        try{floorDataField=Tile.class.getDeclaredField("floorData");floorDataField.setAccessible(true);}catch(Throwable ignored){}
+        try{overlayDataField=Tile.class.getDeclaredField("overlayData");overlayDataField.setAccessible(true);}catch(Throwable ignored){}
     }
     public static void init(){
         Events.run(Trigger.update,LandCopyPast::update);
@@ -54,6 +53,26 @@ public class LandCopyPast{
     }
     public static void setExtra(Tile t,int val){
         try{if(extraDataField!=null)extraDataField.setInt(t,val);}catch(Throwable ignored){}
+    }
+    public static byte getFloorData(Tile t){
+        try{if(floorDataField!=null)return floorDataField.getByte(t);}catch(Throwable ignored){}
+        return 0;
+    }
+    public static void setFloorData(Tile t,byte val){
+        try{if(floorDataField!=null)floorDataField.setByte(t,val);}catch(Throwable ignored){}
+    }
+    public static byte getOverlayData(Tile t){
+        try{if(overlayDataField!=null)return overlayDataField.getByte(t);}catch(Throwable ignored){}
+        return 0;
+    }
+    public static void setOverlayData(Tile t,byte val){
+        try{if(overlayDataField!=null)overlayDataField.setByte(t,val);}catch(Throwable ignored){}
+    }
+    private static void refreshRenderer(){
+        try{
+            Object r=Reflect.get(Vars.editor,"renderer");
+            if(r!=null)Reflect.invoke(r,"resize",new Object[]{Vars.editor.width(),Vars.editor.height()},int.class,int.class);
+        }catch(Throwable ignored){}
     }
     public static void toggleMode(Mode m){
         setMode(mode==m?Mode.none:m);
@@ -141,7 +160,7 @@ public class LandCopyPast{
     }
     private static boolean shouldInterceptVanillaTool(EditorTool tool){
         if(tool==EditorTool.line&&(CustomShapeManager.line45Mode||CustomShapeManager.currentShape!=BrushShape.circle||Vars.editor.brushSize>20f))return true;
-        if((tool==EditorTool.pencil||tool==EditorTool.eraser||tool==EditorTool.spray)&&(CustomShapeManager.currentShape!=BrushShape.circle&& !(tool==EditorTool.pencil&&tool.mode==2&&CustomShapeManager.currentShape==BrushShape.square)))return true;
+        if((tool==EditorTool.pencil||tool==EditorTool.eraser||tool==EditorTool.spray)&&(CustomShapeManager.currentShape!=BrushShape.circle&&!(tool==EditorTool.pencil&&tool.mode==2&&CustomShapeManager.currentShape==BrushShape.square)))return true;
         return false;
     }
     private static void injectViewHooks(MapView view){
@@ -404,8 +423,8 @@ public class LandCopyPast{
                 next.teamIds[idx]=(byte)t.getTeamID();
                 next.rotations[idx]=(byte)(t.build!=null?t.build.rotation:0);
                 next.datas[idx]=t.data;
-                next.floorDatas[idx]=t.floorData;
-                next.overlayDatas[idx]=t.overlayData;
+                next.floorDatas[idx]=getFloorData(t);
+                next.overlayDatas[idx]=getOverlayData(t);
                 next.extraDatas[idx]=getExtra(t);
             }
         }
@@ -420,7 +439,7 @@ public class LandCopyPast{
                     }
                 }
             });
-            Vars.editor.renderer.resize(Vars.editor.width(),Vars.editor.height());
+            refreshRenderer();
             Vars.editor.clearOp();
         }
         if(clipboard!=null)clipboard.dispose();
@@ -443,8 +462,8 @@ public class LandCopyPast{
                         Block fb=Vars.content.block(fid);
                         if(fb instanceof Floor)tile.setFloor((Floor)fb);
                         tile.data=clipboard.datas[idx];
-                        tile.floorData=clipboard.floorDatas[idx];
-                        tile.overlayData=clipboard.overlayDatas[idx];
+                        setFloorData(tile,clipboard.floorDatas[idx]);
+                        setOverlayData(tile,clipboard.overlayDatas[idx]);
                         setExtra(tile,clipboard.extraDatas[idx]);
                     }
                     short oid=clipboard.overlayIds[idx];
@@ -472,7 +491,7 @@ public class LandCopyPast{
                 }
             }
         });
-        Vars.editor.renderer.resize(mapW,mapH);
+        refreshRenderer();
         Vars.editor.clearOp();
         Vars.ui.editor.resetSaved();
     }
@@ -627,4 +646,4 @@ public class LandCopyPast{
             }
         }
     }
-          }
+                                        }
