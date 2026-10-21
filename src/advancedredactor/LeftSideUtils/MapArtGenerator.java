@@ -7,6 +7,8 @@ import mindustry.content.*;
 import mindustry.world.*;
 import mindustry.world.blocks.environment.*;
 import advancedredactor.LeftSideUtils.MapArtDialog.*;
+import advancedredactor.editor.EditorCore.ReflectUtil;
+
 public class MapArtGenerator{
     public static void generate(Fi file,int targetW,int targetH,ArtStyle style,LayerMode layerMode,boolean useAll,ObjectSet<Block> allowed){
         try{
@@ -30,12 +32,11 @@ public class MapArtGenerator{
         }
     }
     private static void applyColoredArt(Pixmap img,int w,int h,LayerMode mode){
-        Block cFloor=Vars.content.block("colored-floor");
-        Block cWall=Vars.content.block("colored-wall");
-        if(cFloor==null)cFloor=Blocks.stone;
-        if(cWall==null)cWall=Blocks.stoneWall;
-        boolean hasFloor=mode==LayerMode.floorOnly||mode==LayerMode.floorAndWall;
-        boolean hasWall=mode==LayerMode.wallOnly||mode==LayerMode.floorAndWall;
+        Block cFloorRaw=Vars.content.block("colored-floor");
+        Block cWallRaw=Vars.content.block("colored-wall");
+        final Block cFloor=(cFloorRaw==null)?Blocks.stone:cFloorRaw;
+        final Block cWall=(cWallRaw==null)?Blocks.stoneWall:cWallRaw;
+        
         Vars.editor.load(()->{
             for(int ty=0;ty<h;ty++){
                 int sy=h-1-ty;
@@ -65,7 +66,7 @@ public class MapArtGenerator{
                         float lum=0.299f*r+0.587f*g+0.114f*b;
                         t.setBlock((a>32&&lum<95f)?cWall:Blocks.air);
                     }
-                    t.extraData=extra;
+                    ReflectUtil.set(t,"extraData",extra);
                 }
             }
         });
@@ -81,6 +82,7 @@ public class MapArtGenerator{
         }
         if(floors.isEmpty())floors.add((Floor)Blocks.stone);
         if(walls.isEmpty())walls.add(Blocks.stoneWall);
+        
         Vars.editor.load(()->{
             for(int ty=0;ty<h;ty++){
                 int sy=h-1-ty;
@@ -140,4 +142,4 @@ public class MapArtGenerator{
         float cb=c.b*255f-b;
         return cr*cr*0.3f+cg*cg*0.59f+cb*cb*0.11f;
     }
-  }
+}
