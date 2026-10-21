@@ -7,6 +7,7 @@ import arc.input.*;
 import arc.math.*;
 import arc.scene.*;
 import arc.scene.event.*;
+import arc.scene.style.*;
 import arc.scene.ui.*;
 import arc.scene.ui.layout.*;
 import arc.util.*;
@@ -26,6 +27,7 @@ public class StencilManager{
     public static float offsetX=0f,offsetY=0f,opacity=0.45f;
     public static boolean enabled=true,moveMode=false;
     private static Element hookedView;
+    private static Table mobileBar;
     private static boolean dragging=false;
     private static float dragStartWorldX,dragStartWorldY,startOffsetX,startOffsetY;
     public static void init(){
@@ -34,6 +36,7 @@ public class StencilManager{
     private static void update(){
         if(Vars.ui==null||Vars.ui.editor==null||!Vars.ui.editor.isShown()){
             hookedView=null;
+            if(mobileBar!=null){mobileBar.remove();mobileBar=null;}
             return;
         }
         MapView view=Vars.ui.editor.getView();
@@ -49,6 +52,25 @@ public class StencilManager{
             hookedView=view;
             injectOverlayElement(view);
         }
+        if(enabled&&region!=null&& (mobileBar==null||mobileBar.parent!=view.parent)){
+            rebuildMobileBar(view.parent);
+        }else if((!enabled||region==null)&&mobileBar!=null){
+            mobileBar.remove();
+            mobileBar=null;
+        }
+    }
+    private static void rebuildMobileBar(Group parent){
+        if(mobileBar!=null)mobileBar.remove();
+        mobileBar=new Table();
+        mobileBar.setFillParent(true);
+        mobileBar.bottom().left();
+        mobileBar.touchable=Touchable.childrenOnly;
+        Table box=new Table(Tex.button);
+        box.margin(4f);
+        TextButton moveBtn=box.button(Core.bundle.get("editor.stencil.movemode","Drag Stencil"),Icon.move,Styles.flatTogglet,()->moveMode=!moveMode).size(150f,42f).get();
+        moveBtn.update(()->moveBtn.setChecked(moveMode));
+        mobileBar.add(box).padLeft(8f).padBottom(8f);
+        parent.addChild(mobileBar);
     }
     private static void injectOverlayElement(MapView view){
         Group parent=view.parent;
@@ -83,6 +105,8 @@ public class StencilManager{
             }
         };
         overlay.name="stencil-overlay";
+        overlay.setFillParent(true);
+        overlay.touchable=Touchable.disabled;
         parent.addChild(overlay);
         view.addCaptureListener(new InputListener(){
             @Override public boolean touchDown(InputEvent event,float x,float y,int pointer,KeyCode button){
@@ -187,53 +211,69 @@ public class StencilManager{
     public static void showDialog(){
         BaseDialog d=new BaseDialog(Core.bundle.get("editor.stencil.title","Stencil Setup"));
         Table t=new Table();
-        t.defaults().pad(4f).left();
-        if(targetW<=0)targetW=Vars.editor.width();
-        if(targetH<=0)targetH=Vars.editor.height();
-        t.add(Core.bundle.get("editor.stencil.width","Width (tiles):"));
-        TextField wf=t.field(String.valueOf(targetW),TextField.TextFieldFilter.digitsOnly,s->{
-            targetW=Math.max(1,Strings.parseInt(s,targetW));
-            if(currentFile!=null)loadStencil(currentFile,targetW,targetH);
-        }).width(140f).get();
-        t.row();
-        t.add(Core.bundle.get("editor.stencil.height","Height (tiles):"));
-        TextField hf=t.field(String.valueOf(targetH),TextField.TextFieldFilter.digitsOnly,s->{
-            targetH=Math.max(1,Strings.parseInt(s,targetH));
-            if(currentFile!=null)loadStencil(currentFile,targetW,targetH);
-        }).width(140f).get();
-        t.row();
-        t.button(Core.bundle.get("editor.stencil.fitmap","Fit Map Size"),Styles.flatt,()->{
-            targetW=Vars.editor.width();
-            targetH=Vars.editor.height();
-            wf.setText(String.valueOf(targetW));
-            hf.setText(String.valueOf(targetH));
-            if(currentFile!=null)loadStencil(currentFile,targetW,targetH);
-        }).colspan(2).growX().height(36f).row();
-        t.button(Core.bundle.get("editor.stencil.selectpng","Select PNG..."),Icon.fileImage,Styles.flatt,()->{
-            pickPNG(file->Core.app.post(()->loadStencil(file,targetW,targetH)));
-        }).colspan(2).growX().height(42f).row();
-        t.add(Core.bundle.get("editor.stencil.opacity","Opacity:"));
-        t.slider(0.05f,1f,0.05f,opacity,v->opacity=v).width(160f).row();
-        t.add(Core.bundle.get("editor.stencil.offsetx","Offset X:"));
-        TextField oxf=t.field(Strings.fixed(offsetX,0),s->offsetX=Strings.parseFloat(s,offsetX)).width(140f).get();
-        t.row();
-        t.add(Core.bundle.get("editor.stencil.offsety","Offset Y:"));
-        TextField oyf=t.field(Strings.fixed(offsetY,0),s->offsetY=Strings.parseFloat(s,offsetY)).width(140f).get();
-        t.row();
-        t.button(Core.bundle.get("editor.stencil.center","Center on Map"),Styles.flatt,()->{
-            offsetX=(Vars.editor.width()-targetW)/2f;
-            offsetY=(Vars.editor.height()-targetH)/2f;
-            oxf.setText(Strings.fixed(offsetX,0));
-            oyf.setText(Strings.fixed(offsetY,0));
-        }).colspan(2).growX().height(36f).row();
-        t.check(Core.bundle.get("editor.stencil.enable","Show Stencil"),enabled,v->enabled=v).colspan(2).left().row();
-        t.check(Core.bundle.get("editor.stencil.movemode","Drag / Move Mode"),moveMode,v->moveMode=v).colspan(2).left().row();
-        t.button(Core.bundle.get("editor.stencil.clear","Clear Stencil"),Icon.trash,Styles.flatt,()->{
-            if(texture!=null){texture.dispose();texture=null;region=null;}
-            currentFile=null;
-            moveMode=false;
-        }).colspan(2).growX().height(38f).padTop(6f).row();
-        d.cont.pane(t).maxHeight(Core.graphics.getHeight()*0.8f);
+        Runnable[] rebuild=new Runnable[1];
+        rebuild[0]=()->{
+            t.clearChildren();
+            t.defaults().pad(4f).left();
+            if(targetW<=0)targetW=Vars.editor.width();
+            if(targetH<=0)targetH=Vars.editor.height();
+            if(region!=null){
+                Table prevBox=new Table(Tex.pane);
+                Image img=new Image(new TextureRegionDrawable(region));
+                img.setScaling(Scaling.fit);
+                prevBox.add(img).size(160f,160f).pad(4f);
+                t.add(prevBox).colspan(2).center().padBottom(6f).row();
+            }
+            t.add(Core.bundle.get("editor.stencil.width","Width (tiles):"));
+            TextField wf=t.field(String.valueOf(targetW),TextField.TextFieldFilter.digitsOnly,s->{
+                targetW=Math.max(1,Strings.parseInt(s,targetW));
+                if(currentFile!=null)loadStencil(currentFile,targetW,targetH);
+            }).width(140f).get();
+            t.row();
+            t.add(Core.bundle.get("editor.stencil.height","Height (tiles):"));
+            TextField hf=t.field(String.valueOf(targetH),TextField.TextFieldFilter.digitsOnly,s->{
+                targetH=Math.max(1,Strings.parseInt(s,targetH));
+                if(currentFile!=null)loadStencil(currentFile,targetW,targetH);
+            }).width(140f).get();
+            t.row();
+            t.button(Core.bundle.get("editor.stencil.fitmap","Fit Map Size"),Styles.flatt,()->{
+                targetW=Vars.editor.width();
+                targetH=Vars.editor.height();
+                wf.setText(String.valueOf(targetW));
+                hf.setText(String.valueOf(targetH));
+                if(currentFile!=null)loadStencil(currentFile,targetW,targetH);
+            }).colspan(2).growX().height(36f).row();
+            t.button(Core.bundle.get("editor.stencil.selectpng","Select PNG..."),Icon.fileImage,Styles.flatt,()->{
+                pickPNG(file->Core.app.post(()->{
+                    loadStencil(file,targetW,targetH);
+                    rebuild[0].run();
+                }));
+            }).colspan(2).growX().height(42f).row();
+            t.add(Core.bundle.get("editor.stencil.opacity","Opacity:"));
+            t.slider(0.05f,1f,0.05f,opacity,v->opacity=v).width(160f).row();
+            t.add(Core.bundle.get("editor.stencil.offsetx","Offset X:"));
+            TextField oxf=t.field(Strings.fixed(offsetX,0),s->offsetX=Strings.parseFloat(s,offsetX)).width(140f).get();
+            t.row();
+            t.add(Core.bundle.get("editor.stencil.offsety","Offset Y:"));
+            TextField oyf=t.field(Strings.fixed(offsetY,0),s->offsetY=Strings.parseFloat(s,offsetY)).width(140f).get();
+            t.row();
+            t.button(Core.bundle.get("editor.stencil.center","Center on Map"),Styles.flatt,()->{
+                offsetX=(Vars.editor.width()-targetW)/2f;
+                offsetY=(Vars.editor.height()-targetH)/2f;
+                oxf.setText(Strings.fixed(offsetX,0));
+                oyf.setText(Strings.fixed(offsetY,0));
+            }).colspan(2).growX().height(36f).row();
+            t.check(Core.bundle.get("editor.stencil.enable","Show Stencil"),enabled,v->enabled=v).colspan(2).left().row();
+            t.check(Core.bundle.get("editor.stencil.movemode","Drag / Move Mode"),moveMode,v->moveMode=v).colspan(2).left().row();
+            t.button(Core.bundle.get("editor.stencil.clear","Clear Stencil"),Icon.trash,Styles.flatt,()->{
+                if(texture!=null){texture.dispose();texture=null;region=null;}
+                currentFile=null;
+                moveMode=false;
+                rebuild[0].run();
+            }).colspan(2).growX().height(38f).padTop(6f).row();
+        };
+        rebuild[0].run();
+        d.cont.pane(t).maxHeight(Core.graphics.getHeight()*0.82f);
         d.addCloseButton();
         d.show();
     }
