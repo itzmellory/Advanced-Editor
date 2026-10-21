@@ -4,7 +4,6 @@ import arc.func.*;
 import arc.graphics.g2d.*;
 import arc.math.*;
 import arc.math.geom.*;
-import arc.scene.*;
 import arc.scene.ui.layout.*;
 import arc.struct.*;
 import arc.util.*;
@@ -54,19 +53,22 @@ public class CustomShapeManager{
     public static Point2 snap45(int x1,int y1,int x2,int y2){
         int dx=x2-x1,dy=y2-y1;
         if(dx==0&&dy==0)return new Point2(x1,y1);
-        float angle=Angles.angle(x1,y1,x2,y2);
-        int oct=Math.round(angle/45f)%8;
-        int dist=Math.max(Math.abs(dx),Math.abs(dy));
-        int ex=x1,ey=y1;
-        switch(oct){
-            case 0:ex=x1+dist;ey=y1;break;
-            case 1:ex=x1+dist;ey=y1+dist;break;
-            case 2:ex=x1;ey=y1+dist;break;
-            case 3:ex=x1-dist;ey=y1+dist;break;
-            case 4:ex=x1-dist;ey=y1;break;
-            case 5:ex=x1-dist;ey=y1-dist;break;
-            case 6:ex=x1;ey=y1-dist;break;
-            case 7:ex=x1+dist;ey=y1-dist;break;
+        int adx=Math.abs(dx),ady=Math.abs(dy);
+        int sx=dx>=0?1:-1,sy=dy>=0?1:-1;
+        int ex,ey;
+        if(adx>ady*2){
+            ex=x1+sx*adx;
+            ey=y1;
+        }else if(ady>adx*2){
+            ex=x1;
+            ey=y1+sy*ady;
+        }else{
+            int dist=Math.max(adx,ady);
+            int maxDistX=sx>0?(Vars.editor.width()-1-x1):x1;
+            int maxDistY=sy>0?(Vars.editor.height()-1-y1):y1;
+            dist=Math.min(dist,Math.min(maxDistX,maxDistY));
+            ex=x1+sx*dist;
+            ey=y1+sy*dist;
         }
         ex=Mathf.clamp(ex,0,Vars.editor.width()-1);
         ey=Mathf.clamp(ey,0,Vars.editor.height()-1);
@@ -74,7 +76,7 @@ public class CustomShapeManager{
     }
     public static void traceLine(int x1,int y1,int x2,int y2,Intc2 cons){
         int dx=Math.abs(x2-x1),sx=x1<x2?1:-1;
-        int dy=-Math.abs(y2-y1),sy=y1<y2 ? 1 : -1;
+        int dy=-Math.abs(y2-y1),sy=y1<y2?1:-1;
         int err=dx+dy,x=x1,y=y1;
         while(true){
             cons.get(x,y);
@@ -122,22 +124,24 @@ public class CustomShapeManager{
             if(ox==null||oy==null||zoom==null)return;
             float mapW=Vars.editor.width(),mapH=Vars.editor.height();
             if(mapW<=0||mapH<=0)return;
+            float ratio=1f/(mapW/mapH);
             float size=Math.min(view.getWidth(),view.getHeight());
-            float scl=size/Math.max(mapW,mapH)*zoom;
-            float cx=view.x+view.getWidth()/2f+ox*zoom;
-            float cy=view.y+view.getHeight()/2f+oy*zoom;
-            float mapBlX=cx-mapW*scl/2f;
-            float mapBlY=cy-mapH*scl/2f;
+            float sclW=size*zoom;
+            float sclH=size*zoom*ratio;
+            float tileW=sclW/mapW;
+            float tileH=sclH/mapH;
+            float mapBlX=view.x+view.getWidth()/2f+ox*zoom-sclW/2f;
+            float mapBlY=view.y+view.getHeight()/2f+oy*zoom-sclH/2f;
             Draw.color(Pal.accent);
             Lines.stroke(Scl.scl(1.8f));
             mask.each(packed->{
                 int x=Point2.x(packed),y=Point2.y(packed);
-                float px=mapBlX+x*scl;
-                float py=mapBlY+y*scl;
-                if(!mask.contains(Point2.pack(x-1,y)))Lines.line(px,py,px,py+scl);
-                if(!mask.contains(Point2.pack(x+1,y)))Lines.line(px+scl,py,px+scl,py+scl);
-                if(!mask.contains(Point2.pack(x,y-1)))Lines.line(px,py,px+scl,py);
-                if(!mask.contains(Point2.pack(x,y+1)))Lines.line(px,py+scl,px+scl,py+scl);
+                float px=mapBlX+x*tileW;
+                float py=mapBlY+y*tileH;
+                if(!mask.contains(Point2.pack(x-1,y)))Lines.line(px,py,px,py+tileH);
+                if(!mask.contains(Point2.pack(x+1,y)))Lines.line(px+tileW,py,px+tileW,py+tileH);
+                if(!mask.contains(Point2.pack(x,y-1)))Lines.line(px,py,px+tileW,py);
+                if(!mask.contains(Point2.pack(x,y+1)))Lines.line(px,py+tileH,px+tileW,py+tileH);
             });
             Draw.reset();
         }catch(Throwable ignored){}
