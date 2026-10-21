@@ -8,39 +8,50 @@ import arc.util.*;
 import mindustry.*;
 import mindustry.editor.*;
 import mindustry.game.EventType.*;
+import mindustry.gen.*;
 import mindustry.ui.*;
+import advancedredactor.LeftSideUtils.*;
 public class LeftSideUi{
-    private static final ObjectSet<Table> hookedTables=new ObjectSet<>();
+    private static final ObjectSet<Table> hookedBrushTables=new ObjectSet<>();
+    private static final ObjectSet<Table> hookedMidTables=new ObjectSet<>();
     public static void init(){
         Events.run(Trigger.update,()->{
             if(Vars.ui==null||Vars.ui.editor==null)return;
             if(!Vars.ui.editor.isShown()){
-                hookedTables.clear();
+                hookedBrushTables.clear();
+                hookedMidTables.clear();
                 return;
             }
-            injectBrushSizeField(Vars.ui.editor);
+            injectLeftControls(Vars.ui.editor);
         });
     }
-    private static void injectBrushSizeField(Element root){
+    private static void injectLeftControls(Element root){
         if(root instanceof Slider){
             Slider sl=(Slider)root;
             if(Math.abs(sl.getMaxValue()-(MapEditor.brushSizes.length-1))<0.1f){
                 if(sl.parent instanceof Stack&&sl.parent.parent instanceof Table){
-                    Table parentTable=(Table)sl.parent.parent;
-                    if(!hookedTables.contains(parentTable)){
-                        hookedTables.add(parentTable);
-                        rebuildLeftBrushPanel(parentTable,(Stack)sl.parent,sl);
+                    Table brushTable=(Table)sl.parent.parent;
+                    if(!hookedBrushTables.contains(brushTable)){
+                        hookedBrushTables.add(brushTable);
+                        rebuildBrushBox(brushTable,(Stack)sl.parent,sl);
+                    }
+                    if(brushTable.parent instanceof Table){
+                        Table midTable=(Table)brushTable.parent;
+                        if(!hookedMidTables.contains(midTable)){
+                            hookedMidTables.add(midTable);
+                            appendBottomUtils(midTable);
+                        }
                     }
                 }
             }
         }
         if(root instanceof Group){
             for(Element e:((Group)root).getChildren()){
-                injectBrushSizeField(e);
+                injectLeftControls(e);
             }
         }
     }
-    private static void rebuildLeftBrushPanel(Table parent,Stack stack,Slider slider){
+    private static void rebuildBrushBox(Table parent,Stack stack,Slider slider){
         try{
             Seq<Element> saved=new Seq<>();
             for(Element e:parent.getChildren())saved.add(e);
@@ -51,7 +62,7 @@ public class LeftSideUi{
                     parent.add(el).growX().padTop(4f).row();
                     Table inputBox=new Table();
                     inputBox.left();
-                    inputBox.add(Core.bundle.get("editor.brushsize.input","Size:")).style(Styles.outlineLabel).padRight(4f);
+                    inputBox.add(Core.bundle.get("editor.brushsize.input","Brush:")).style(Styles.outlineLabel).padRight(4f);
                     TextField field=new TextField(Strings.fixed(Vars.editor.brushSize,1));
                     field.setFilter((f,c)->Character.isDigit(c)||c=='.');
                     field.changed(()->{
@@ -64,11 +75,21 @@ public class LeftSideUi{
                         field.setText(Strings.fixed(Vars.editor.brushSize,1));
                     });
                     inputBox.add(field).width(80f).height(32f);
-                    parent.add(inputBox).growX().padTop(4f).padBottom(8f).row();
+                    parent.add(inputBox).growX().padTop(4f).padBottom(6f).row();
                 }else{
                     parent.add(el).growX().row();
                 }
             }
+        }catch(Exception ignored){}
+    }
+    private static void appendBottomUtils(Table mid){
+        try{
+            mid.row();
+            Table utils=new Table();
+            utils.defaults().growX().height(40f).padTop(3f).padBottom(3f);
+            utils.button(Core.bundle.get("editor.stencil.btn","Stencil"),Icon.imageSmall,Styles.flatt,StencilManager::showDialog).row();
+            utils.button(Core.bundle.get("editor.mapart.btn","Pixel Art"),Icon.terrain,Styles.flatt,MapArtDialog::show).row();
+            mid.add(utils).growX().padTop(4f).row();
         }catch(Exception ignored){}
     }
 }
