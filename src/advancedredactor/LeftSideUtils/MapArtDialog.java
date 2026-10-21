@@ -36,20 +36,18 @@ public class MapArtDialog{
             main.add(Core.bundle.get("editor.mapart.height","Height (1-3000):"));
             main.field(String.valueOf(artHeight),TextField.TextFieldFilter.digitsOnly,s->artHeight=Math.max(1,Math.min(3000,Strings.parseInt(s,artHeight)))).width(150f).row();
             Label fileLabel=new Label(selectedFile==null?Core.bundle.get("editor.mapart.nofile","No PNG selected"):selectedFile.name());
-            fileLabel.setColor(selectedFile==null?Color.lightGray: Color.lime);
+            fileLabel.setColor(selectedFile==null?Color.lightGray:Color.lime);
             main.button(Core.bundle.get("editor.mapart.selectpng","Choose PNG..."),Icon.fileImage,Styles.flatt,()->{
-                pickPNG(file->{
-                    Core.app.post(()->{
-                        selectedFile=file;
-                        try{
-                            Pixmap p=new Pixmap(file);
-                            artWidth=Math.min(800,p.width);
-                            artHeight=Math.min(800,p.height);
-                            p.dispose();
-                        }catch(Exception ignored){}
-                        rebuild[0].run();
-                    });
-                });
+                pickPNG(file->Core.app.post(()->{
+                    selectedFile=file;
+                    try{
+                        Pixmap p=new Pixmap(file);
+                        artWidth=Math.min(800,p.width);
+                        artHeight=Math.min(800,p.height);
+                        p.dispose();
+                    }catch(Exception ignored){}
+                    rebuild[0].run();
+                }));
             }).colspan(2).growX().height(42f).row();
             main.add(fileLabel).colspan(2).left().padBottom(6f).row();
             main.add(Core.bundle.get("editor.mapart.type","Generation Type:")).left();
@@ -74,10 +72,7 @@ public class MapArtDialog{
                 }
             }
             main.button(Core.bundle.get("editor.mapart.generate","Generate Art on Map"),Icon.ok,Styles.flatt,()->{
-                if(selectedFile==null){
-                    Vars.ui.showErrorMessage(Core.bundle.get("editor.mapart.needfile","Please select a PNG file first!"));
-                    return;
-                }
+                if(selectedFile==null){Vars.ui.showErrorMessage(Core.bundle.get("editor.mapart.needfile","Please select a PNG file first!"));return;}
                 d.hide();
                 Vars.ui.loadAnd(()->MapArtGenerator.generate(selectedFile,artWidth,artHeight,style,layerMode,useAllBlocks,allowedBlocks));
             }).colspan(2).growX().height(46f).padTop(10f).row();
@@ -89,21 +84,21 @@ public class MapArtDialog{
     }
     private static void pickPNG(arc.func.Cons<Fi> cons){
         try{
-            Class<?> fc=Class.forName("mindustry.ui.dialogs.FileChooser");
-            Method m=fc.getMethod("open",String.class);
-            Object fci=m.invoke(null,"png");
-            Method sub=fci.getClass().getMethod("submit",arc.func.Cons.class);
-            sub.invoke(fci,cons);
-            return;
+            Class<?> fc=null;
+            try{fc=Class.forName("mindustry.ui.FileChooser");}catch(Throwable ignored){}
+            if(fc==null)fc=Class.forName("mindustry.ui.dialogs.FileChooser");
+            Method op=null;
+            for(Method m:fc.getMethods())if(m.getName().equals("open")){op=m;break;}
+            if(op!=null){
+                Object fci=op.getParameterTypes()[0]==String.class?op.invoke(null,"png"):op.invoke(null,(Object)new String[]{"png"});
+                for(Method m:fci.getClass().getMethods())if(m.getName().equals("submit")){m.invoke(fci,cons);return;}
+            }
         }catch(Throwable ignored){}
         try{
-            for(Method m:Vars.platform.getClass().getMethods()){
+            for(Method m:mindustry.core.Platform.class.getMethods()){
                 if(m.getName().equals("showFileChooser")){
-                    if(m.getParameterTypes().length==3){
-                        m.invoke(Vars.platform,true,"png",cons);return;
-                    }else if(m.getParameterTypes().length==4){
-                        m.invoke(Vars.platform,true,"Select PNG","png",cons);return;
-                    }
+                    if(m.getParameterTypes().length==3){m.invoke(Vars.platform,true,"png",cons);return;}
+                    if(m.getParameterTypes().length==4){m.invoke(Vars.platform,true,"Select PNG","png",cons);return;}
                 }
             }
         }catch(Throwable ignored){}
@@ -116,9 +111,7 @@ public class MapArtDialog{
         }
     }
     public static void initDefaultAllowedBlocks(){
-        for(Block b:Vars.content.blocks()){
-            if(isEligibleTerrainBlock(b))allowedBlocks.add(b);
-        }
+        for(Block b:Vars.content.blocks())if(isEligibleTerrainBlock(b))allowedBlocks.add(b);
     }
     public static boolean isEligibleTerrainBlock(Block b){
         if(b==null||b==Blocks.air||b.synthetic()||b.isOverlay())return false;
@@ -138,8 +131,7 @@ public class MapArtDialog{
                 if(!isEligibleTerrainBlock(b))continue;
                 if(!q.isEmpty()&&!b.localizedName.toLowerCase().contains(q)&&!b.name.toLowerCase().contains(q))continue;
                 Button btn=grid.button(bt->bt.image(b.uiIcon).size(28f),Styles.flati,()->{
-                    if(allowedBlocks.contains(b))allowedBlocks.remove(b);
-                    else allowedBlocks.add(b);
+                    if(allowedBlocks.contains(b))allowedBlocks.remove(b);else allowedBlocks.add(b);
                 }).size(40f).pad(2f).tooltip(b.localizedName).get();
                 btn.update(()->btn.setColor(allowedBlocks.contains(b)?Color.white:Color.darkGray));
                 if(++cols%10==0)grid.row();
