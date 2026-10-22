@@ -3,8 +3,6 @@ import arc.*;
 import arc.files.*;
 import arc.graphics.*;
 import arc.graphics.g2d.*;
-import arc.input.*;
-import arc.math.*;
 import arc.math.geom.*;
 import arc.scene.*;
 import arc.scene.event.*;
@@ -28,11 +26,11 @@ public class StencilManager{
     public static int targetW=100,targetH=100;
     public static float offsetX=0f,offsetY=0f,opacity=0.45f;
     public static boolean enabled=true,moveMode=false;
-    private static Element hookedView;
     private static Table mobileBar;
     private static boolean dragging=false;
     private static int dragLastX,dragLastY;
     private static EditorTool savedTool;
+    private static final Vec2 tmpA=new Vec2(),tmpB=new Vec2();
     public static void init(){
         Events.run(Trigger.update,StencilManager::update);
     }
@@ -49,8 +47,8 @@ public class StencilManager{
     }
     private static void update(){
         if(Vars.ui==null||Vars.ui.editor==null||!Vars.ui.editor.isShown()){
-            hookedView=null;
             if(mobileBar!=null){mobileBar.remove();mobileBar=null;}
+            dragging=false;
             return;
         }
         MapView view=Vars.ui.editor.getView();
@@ -59,9 +57,6 @@ public class StencilManager{
             savedTool=view.getTool();
             moveMode=false;
         }
-        boolean hasOverlay=false;
-        for(Element e:view.parent.getChildren()){if("stencil-overlay".equals(e.name)){hasOverlay=true;break;}}
-        if(hookedView!=view||!hasOverlay){hookedView=view;injectOverlayElement(view);}
         if(enabled&&region!=null&&(mobileBar==null||mobileBar.parent!=view.parent)){
             rebuildMobileBar(view.parent);
         }else if((!enabled||region==null)&&mobileBar!=null){
@@ -82,64 +77,43 @@ public class StencilManager{
         mobileBar.add(box).padLeft(8f).padBottom(8f);
         parent.addChild(mobileBar);
     }
-    private static void injectOverlayElement(MapView view){
-        Group parent=view.parent;
-        Element overlay=new Element(){
-            @Override public void draw(){
-                if(!enabled||region==null||!Vars.ui.editor.isShown())return;
-                try{
-                    float[] g=new float[4];
-                    if(!LandCopyPast.calcGridBounds(view,g))return;
-                    float x0=view.x+g[0],y0=view.y+g[1],tileW=g[2],tileH=g[3];
-                    float stencilX=x0+offsetX*tileW,stencilY=y0+offsetY*tileH;
-                    float rw=targetW*tileW,rh=targetH*tileH;
-                    if(ScissorStack.push(Tmp.r1.set(view.x,view.y,view.getWidth(),view.getHeight()))){
-                        Draw.color(1f,1f,1f,opacity);
-                        Draw.rect(region,stencilX+rw/2f,stencilY+rh/2f,rw,rh);
-                        if(moveMode){
-                            Lines.stroke(2f,dragging?Color.sky:Pal.accent);
-                            Lines.rect(stencilX,stencilY,rw,rh);
-                        }
-                        Draw.reset();
-                        ScissorStack.pop();
-                    }
-                }catch(Throwable ignored){}
+    public static void drawOnOverlay(MapView view,Element overlay){
+        if(!enabled||region==null)return;
+        try{
+            Vec2 a=LandCopyPast.tileToOverlay(view,overlay,offsetX,offsetY,tmpA);
+            Vec2 b=LandCopyPast.tileToOverlay(view,overlay,offsetX+targetW,offsetY+targetH,tmpB);
+            float rx=Math.min(a.x,b.x),ry=Math.min(a.y,b.y);
+            float rw=Math.abs(b.x-a.x),rh=Math.abs(b.y-a.y);
+            Draw.color(1f,1f,1f,opacity);
+            Draw.rect(region,rx+rw/2f,ry+rh/2f,rw,rh);
+            if(moveMode){
+                Lines.stroke(2f,dragging?Color.sky:Pal.accent);
+                Lines.rect(rx,ry,rw,rh);
             }
-        };
-        overlay.name="stencil-overlay";
-        overlay.setFillParent(true);
-        overlay.touchable=Touchable.disabled;
-        parent.addChild(overlay);
-        view.addCaptureListener(new InputListener(){
-            @Override public boolean touchDown(InputEvent event,float x,float y,int pointer,KeyCode button){
-                if(pointer!=0||!enabled||region==null||!moveMode||button!=KeyCode.mouseLeft)return false;
-                Point2 p=LandCopyPast.projectTile(view,x,y);
-                dragging=true;
-                dragLastX=p.x;
-                dragLastY=p.y;
-                LandCopyPast.cancelMapGestures(view);
-                event.cancel();
-                event.stop();
-                return true;
-            }
-            @Override public void touchDragged(InputEvent event,float x,float y,int pointer){
-                if(pointer!=0||!dragging)return;
-                Point2 p=LandCopyPast.projectTile(view,x,y);
-                offsetX+=p.x-dragLastX;
-                offsetY+=p.y-dragLastY;
-                dragLastX=p.x;
-                dragLastY=p.y;
-                LandCopyPast.cancelMapGestures(view);
-                event.cancel();
-                event.stop();
-            }
-            @Override public void touchUp(InputEvent event,float x,float y,int pointer,KeyCode button){
-                if(pointer!=0||!dragging)return;
-                dragging=false;
-                event.cancel();
-                event.stop();
-            }
-        });
+            Draw.reset();
+        }catch(Throwable ignored){}
+    }
+    public static boolean onTouchDown(MapView view,float x,float y){
+        if(!enabled||region==null||!moveMode)return false;
+        Point2 p=LandCopyPast.projectRaw(view,x,y);
+        dragging=true;
+        dragLastX=p.x;
+        dragLastY=p.y;
+        return true;
+    }
+    public static boolean onTouchDragged(MapView view,float x,float y){
+        if(!dragging)return false;
+        Point2 p=LandCopyPast.projectRaw(view,x,y);
+        offsetX+=p.x-dragLastX;
+        offsetY+=p.y-dragLastY;
+        dragLastX=p.x;
+        dragLastY=p.y;
+        return true;
+    }
+    public static boolean onTouchUp(){
+        if(!dragging)return false;
+        dragging=false;
+        return true;
     }
     public static void loadStencil(Fi file,int w,int h){
         try{
