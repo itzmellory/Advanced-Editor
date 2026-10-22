@@ -3,6 +3,7 @@ import arc.func.*;
 import arc.graphics.g2d.*;
 import arc.math.*;
 import arc.math.geom.*;
+import arc.scene.*;
 import arc.scene.ui.layout.*;
 import arc.struct.*;
 import mindustry.*;
@@ -21,6 +22,7 @@ public class CustomShapeManager{
     public static BrushShape currentShape=BrushShape.circle;
     public static boolean line45Mode=false;
     private static final IntSet maskCache=new IntSet();
+    private static final Vec2 tmpA=new Vec2(),tmpB=new Vec2();
     public static boolean inside(int dx,int dy,float radius,BrushShape shape){
         if(radius<=1f)return dx==0&&dy==0;
         switch(shape){
@@ -75,6 +77,9 @@ public class CustomShapeManager{
         }
     }
     public static void drawSteppedOutline(MapView view,int cx,int cy,float radius,BrushShape shape){
+        drawSteppedOutline(view,LandCopyPast.getOverlayElement(),cx,cy,radius,shape);
+    }
+    public static void drawSteppedOutline(MapView view,Element overlay,int cx,int cy,float radius,BrushShape shape){
         maskCache.clear();
         int clamped=Math.max(1,(int)Math.ceil(radius));
         int w=Vars.editor.width(),h=Vars.editor.height();
@@ -86,9 +91,12 @@ public class CustomShapeManager{
                 }
             }
         }
-        drawMaskEdges(view,maskCache);
+        drawMaskEdges(view,overlay,maskCache);
     }
     public static void drawLineSteppedOutline(MapView view,int x1,int y1,int x2,int y2,float radius,BrushShape shape){
+        drawLineSteppedOutline(view,LandCopyPast.getOverlayElement(),x1,y1,x2,y2,radius,shape);
+    }
+    public static void drawLineSteppedOutline(MapView view,Element overlay,int x1,int y1,int x2,int y2,float radius,BrushShape shape){
         maskCache.clear();
         int clamped=Math.max(1,(int)Math.ceil(radius));
         int w=Vars.editor.width(),h=Vars.editor.height();
@@ -102,13 +110,18 @@ public class CustomShapeManager{
                 }
             }
         });
-        drawMaskEdges(view,maskCache);
+        drawMaskEdges(view,overlay,maskCache);
     }
     public static void drawMaskEdges(MapView view,IntSet mask){
+        drawMaskEdges(view,LandCopyPast.getOverlayElement(),mask);
+    }
+    public static void drawMaskEdges(MapView view,Element overlay,IntSet mask){
         try{
-            float[] g=new float[4];
-            if(!LandCopyPast.calcGridBounds(view,g))return;
-            float x0=view.x+g[0],y0=view.y+g[1],tileW=g[2],tileH=g[3];
+            Vec2 o0=LandCopyPast.tileToOverlay(view,overlay,0f,0f,tmpA);
+            Vec2 o1=LandCopyPast.tileToOverlay(view,overlay,1f,1f,tmpB);
+            float x0=o0.x,y0=o0.y;
+            float tileW=o1.x-x0,tileH=o1.y-y0;
+            if(Math.abs(tileW)<=0.0001f||Math.abs(tileH)<=0.0001f)return;
             Draw.color(Pal.accent);
             Lines.stroke(Scl.scl(1.8f));
             mask.each(packed->{
