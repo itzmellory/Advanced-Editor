@@ -251,4 +251,4 @@ public class StencilManager{
         d.addCloseButton();
         d.show();
     }
-                }
+}
