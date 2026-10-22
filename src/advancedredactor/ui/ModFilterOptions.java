@@ -1,7 +1,9 @@
 package advancedredactor.ui;
 import arc.*;
 import arc.func.*;
+import arc.scene.ui.*;
 import arc.scene.ui.layout.*;
+import arc.util.*;
 import mindustry.*;
 import mindustry.gen.*;
 import mindustry.maps.filters.*;
