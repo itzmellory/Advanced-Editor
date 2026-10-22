@@ -88,11 +88,9 @@ public class StencilManager{
             @Override public void draw(){
                 if(!enabled||region==null||!Vars.ui.editor.isShown())return;
                 try{
-                    Vec2 p0=LandCopyPast.unprojectTile(view,0,0);
-                    float x0=p0.x,y0=p0.y;
-                    Vec2 p1=LandCopyPast.unprojectTile(view,1,1);
-                    float tileW=Math.abs(p1.x-x0),tileH=Math.abs(p1.y-y0);
-                    if(tileW<=0.0001f||tileH<=0.0001f)return;
+                    float[] g=new float[4];
+                    if(!LandCopyPast.calcGridBounds(view,g))return;
+                    float x0=view.x+g[0],y0=view.y+g[1],tileW=g[2],tileH=g[3];
                     float stencilX=x0+offsetX*tileW,stencilY=y0+offsetY*tileH;
                     float rw=targetW*tileW,rh=targetH*tileH;
                     if(ScissorStack.push(Tmp.r1.set(view.x,view.y,view.getWidth(),view.getHeight()))){
