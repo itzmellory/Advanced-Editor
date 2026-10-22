@@ -159,7 +159,7 @@ public class MapArtDialog{
                 btn.setChecked(sel);
                 Image iconImg=new Image(b.uiIcon);
                 iconImg.setScaling(Scaling.fit);
-                iconImg.setColor(sel?Color.white:Color.darkGray);
+                iconImg.setColor(sel?Color.white:new Color(0.2f,0.2f,0.2f,0.7f));
                 Label checkMark=new Label(()->allowedBlocks.contains(b)?"[lime]✔[]":"");
                 checkMark.setAlignment(Align.topRight);
                 Stack st=new Stack(iconImg,checkMark);
@@ -169,7 +169,7 @@ public class MapArtDialog{
                     else allowedBlocks.add(b);
                     boolean ns=allowedBlocks.contains(b);
                     btn.setChecked(ns);
-                    iconImg.setColor(ns?Color.white:Color.darkGray);
+                    iconImg.setColor(ns?Color.white:new Color(0.2f,0.2f,0.2f,0.7f));
                     updateCount.run();
                 });
                 grid.add(btn).size(48f).pad(3f).tooltip(b.localizedName);
