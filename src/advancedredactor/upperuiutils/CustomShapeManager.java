@@ -5,11 +5,11 @@ import arc.math.*;
 import arc.math.geom.*;
 import arc.scene.ui.layout.*;
 import arc.struct.*;
+import arc.util.*;
 import mindustry.*;
 import mindustry.editor.*;
 import mindustry.graphics.*;
 import mindustry.world.*;
-import arc.util.Reflect;
 public class CustomShapeManager{
     public enum BrushShape{
         circle("●","Circle"),
@@ -113,24 +113,20 @@ public class CustomShapeManager{
             if(ox==null||oy==null||zoom==null)return;
             float mapW=Vars.editor.width(),mapH=Vars.editor.height();
             if(mapW<=0||mapH<=0)return;
-            float ratio=1f/(mapW/mapH);
             float size=Math.min(view.getWidth(),view.getHeight());
-            float sclW=size*zoom;
-            float sclH=size*zoom*ratio;
-            float tileW=sclW/mapW;
-            float tileH=sclH/mapH;
-            float mapBlX=view.x+view.getWidth()/2f+ox*zoom-sclW/2f;
-            float mapBlY=view.y+view.getHeight()/2f+oy*zoom-sclH/2f;
+            float scl=size/Math.max(mapW,mapH)*zoom;
+            float mapBlX=view.x+view.getWidth()/2f+ox*zoom-mapW*scl/2f;
+            float mapBlY=view.y+view.getHeight()/2f+oy*zoom-mapH*scl/2f;
             Draw.color(Pal.accent);
             Lines.stroke(Scl.scl(1.8f));
             mask.each(packed->{
                 int x=Point2.x(packed),y=Point2.y(packed);
-                float px=mapBlX+x*tileW;
-                float py=mapBlY+y*tileH;
-                if(!mask.contains(Point2.pack(x-1,y)))Lines.line(px,py,px,py+tileH);
-                if(!mask.contains(Point2.pack(x+1,y)))Lines.line(px+tileW,py,px+tileW,py+tileH);
-                if(!mask.contains(Point2.pack(x,y-1)))Lines.line(px,py,px+tileW,py);
-                if(!mask.contains(Point2.pack(x,y+1)))Lines.line(px,py+tileH,px+tileW,py+tileH);
+                float px=mapBlX+x*scl;
+                float py=mapBlY+y*scl;
+                if(!mask.contains(Point2.pack(x-1,y)))Lines.line(px,py,px,py+scl);
+                if(!mask.contains(Point2.pack(x+1,y)))Lines.line(px+scl,py,px+scl,py+scl);
+                if(!mask.contains(Point2.pack(x,y-1)))Lines.line(px,py,px+scl,py);
+                if(!mask.contains(Point2.pack(x,y+1)))Lines.line(px,py+scl,px+scl,py+scl);
             });
             Draw.reset();
         }catch(Throwable ignored){}
