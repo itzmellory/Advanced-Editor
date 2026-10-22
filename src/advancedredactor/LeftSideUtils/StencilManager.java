@@ -26,11 +26,10 @@ public class StencilManager{
     public static Fi currentFile;
     public static int targetW=100,targetH=100;
     public static float offsetX=0f,offsetY=0f,opacity=0.45f;
-    public static boolean enabled=true;
+    public static boolean enabled=true,moveMode=false;
     private static Element hookedView;
     private static boolean dragging=false;
     private static float dragStartWorldX,dragStartWorldY,startOffsetX,startOffsetY;
-    private static EditorTool tempToolStorage;
     public static void init(){
         Events.run(Trigger.update,StencilManager::update);
     }
@@ -47,17 +46,18 @@ public class StencilManager{
     }
     private static boolean hitStencilRegion(MapView view,float x,float y){
         float[] g=new float[4];
-        if(LandCopyPast.viewMapGeometry(view,g)==null)return false;
-        float rx=g[0]+offsetX*g[2],ry=g[1]+offsetY*g[3];
-        float rw=targetW*g[2],rh=targetH*g[3];
-        return x>=rx&&x<=rx+rw&&y>=ry&&y<=ry+rh;
+        if(!LandCopyPast.viewMapGeometry(view,g))return false;
+        float rx=g[0]+offsetX*g[2];
+        float ry=g[1]+offsetY*g[3];
+        float rw=targetW*g[2];
+        float rh=targetH*g[3];
+        return moveMode&&x>=rx&&x<=rx+rw&&y>=ry&&y<=ry+rh;
     }
-    private static void freezeCamera(MapView view){
-        tempToolStorage=view.getTool();
-        view.setTool(EditorTool.line);
+    private static void lockPan(MapView view){
+        try{Reflect.set(view,"drawing",true);}catch(Throwable ignored){}
     }
-    private static void unfreezeCamera(MapView view){
-        if(tempToolStorage!=null){view.setTool(tempToolStorage);tempToolStorage=null;}
+    private static void unlockPan(MapView view){
+        try{Reflect.set(view,"drawing",false);}catch(Throwable ignored){}
     }
     private static void injectOverlayElement(MapView view){
         Group parent=view.parent;
@@ -66,13 +66,23 @@ public class StencilManager{
                 if(!enabled||region==null||!Vars.ui.editor.isShown())return;
                 try{
                     float[] g=new float[4];
-                    if(LandCopyPast.viewMapGeometry(view,g)==null)return;
+                    if(!LandCopyPast.viewMapGeometry(view,g))return;
                     float stencilX=view.x+g[0]+offsetX*g[2],stencilY=view.y+g[1]+offsetY*g[3];
                     float rw=targetW*g[2],rh=targetH*g[3];
                     Draw.color(1f,1f,1f,opacity);
                     Draw.rect(region,stencilX+rw/2f,stencilY+rh/2f,rw,rh);
-                    Lines.stroke(2f,dragging?Color.sky:Pal.accent);
-                    Lines.rect(stencilX,stencilY,rw,rh);
+                    if(moveMode){
+                        Lines.stroke(2f,dragging?Color.sky:Pal.accent);
+                        Lines.rect(stencilX,stencilY,rw,rh);
+                        float hs=Scl.scl(28f);
+                        float hx=stencilX+rw,hy=stencilY+rh;
+                        Draw.color(Pal.darkerGray,0.9f);
+                        Fill.rect(hx,hy,hs,hs);
+                        Draw.color(dragging?Color.sky:Pal.accent);
+                        Lines.rect(hx-hs/2f,hy-hs/2f,hs,hs);
+                        Draw.color(Color.white);
+                        Draw.rect(Icon.move.getRegion(),hx,hy,hs*0.75f,hs*0.75f);
+                    }
                     Draw.reset();
                 }catch(Throwable ignored){}
             }
@@ -81,22 +91,17 @@ public class StencilManager{
         overlay.setFillParent(true);
         overlay.touchable=Touchable.disabled;
         parent.addChild(overlay);
-        view.addCaptureListener(new ElementGestureListener(){
-            @Override public void pan(InputEvent event,float x,float y,float deltaX,float deltaY){
-                if(dragging){event.cancel();event.stop();}
-            }
-        });
         view.addCaptureListener(new InputListener(){
             @Override public boolean touchDown(InputEvent event,float x,float y,int pointer,KeyCode button){
-                if(!enabled||region==null||button!=KeyCode.mouseLeft)return false;
+                if(!enabled||region==null||!moveMode||button!=KeyCode.mouseLeft)return false;
                 if(!hitStencilRegion(view,x,y))return false;
                 float[] g=new float[4];
-                if(LandCopyPast.viewMapGeometry(view,g)==null)return false;
+                if(!LandCopyPast.viewMapGeometry(view,g))return false;
                 float tx=(x-g[0])/g[2],ty=(y-g[1])/g[3];
                 dragging=true;
                 dragStartWorldX=tx;dragStartWorldY=ty;
                 startOffsetX=offsetX;startOffsetY=offsetY;
-                freezeCamera(view);
+                lockPan(view);
                 event.cancel();
                 event.stop();
                 return true;
@@ -104,7 +109,7 @@ public class StencilManager{
             @Override public void touchDragged(InputEvent event,float x,float y,int pointer){
                 if(!dragging)return;
                 float[] g=new float[4];
-                if(LandCopyPast.viewMapGeometry(view,g)==null)return;
+                if(!LandCopyPast.viewMapGeometry(view,g))return;
                 float tx=(x-g[0])/g[2],ty=(y-g[1])/g[3];
                 offsetX=startOffsetX+(tx-dragStartWorldX);
                 offsetY=startOffsetY+(ty-dragStartWorldY);
@@ -112,7 +117,7 @@ public class StencilManager{
                 event.stop();
             }
             @Override public void touchUp(InputEvent event,float x,float y,int pointer,KeyCode button){
-                unfreezeCamera(view);
+                unlockPan(view);
                 if(dragging){dragging=false;event.cancel();event.stop();}
             }
         });
@@ -212,9 +217,11 @@ public class StencilManager{
                 oxf.setText(Strings.fixed(offsetX,0));oyf.setText(Strings.fixed(offsetY,0));
             }).colspan(2).growX().height(36f).row();
             t.check(Core.bundle.get("editor.stencil.enable","Show Stencil"),enabled,v->enabled=v).colspan(2).left().row();
+            t.check(Core.bundle.get("editor.stencil.movemode","Drag Anywhere Inside Stencil"),moveMode,v->moveMode=v).colspan(2).left().row();
             t.button(Core.bundle.get("editor.stencil.clear","Clear Stencil"),Icon.trash,Styles.flatt,()->{
                 if(texture!=null){texture.dispose();texture=null;region=null;}
                 currentFile=null;
+                moveMode=false;
                 rebuild[0].run();
             }).colspan(2).growX().height(38f).padTop(6f).row();
         };
