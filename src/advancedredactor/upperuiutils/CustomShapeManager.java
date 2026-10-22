@@ -106,11 +106,9 @@ public class CustomShapeManager{
     }
     public static void drawMaskEdges(MapView view,IntSet mask){
         try{
-            Vec2 p0=LandCopyPast.unprojectTile(view,0,0);
-            float x0=p0.x,y0=p0.y;
-            Vec2 p1=LandCopyPast.unprojectTile(view,1,1);
-            float tileW=Math.abs(p1.x-x0),tileH=Math.abs(p1.y-y0);
-            if(tileW<=0.0001f||tileH<=0.0001f)return;
+            float[] g=new float[4];
+            if(!LandCopyPast.calcGridBounds(view,g))return;
+            float x0=view.x+g[0],y0=view.y+g[1],tileW=g[2],tileH=g[3];
             Draw.color(Pal.accent);
             Lines.stroke(Scl.scl(1.8f));
             mask.each(packed->{
