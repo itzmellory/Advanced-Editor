@@ -1,61 +1,79 @@
 package advancedredactor.ui;
 import arc.*;
 import arc.func.*;
-import arc.scene.Element;
-import arc.scene.ui.*;
 import arc.scene.ui.layout.*;
-import arc.util.*;
 import mindustry.*;
-import mindustry.content.*;
+import mindustry.gen.*;
 import mindustry.maps.filters.*;
 import mindustry.ui.*;
 import mindustry.ui.dialogs.*;
 import mindustry.world.*;
+import mindustry.world.blocks.environment.*;
 public class ModFilterOptions{
-    public static final Boolf<Block> floorsOnly=b->b.isFloor()&&!b.isOverlay()&&b!=Blocks.air;
-    public static final Boolf<Block> wallsOnly=b->!b.isFloor()&&!b.synthetic()&&b!=Blocks.air;
-    public static final Boolf<Block> oresOnly=b->b.isOverlay()&&b!=Blocks.air;
+    public static final Boolf<Block> floorsOnly=b->(b instanceof Floor&&!(b instanceof OverlayFloor))&&!headless()&&Core.atlas.isFound(b.fullIcon);
+    public static final Boolf<Block> wallsOnly=b->(!b.synthetic()&&!(b instanceof Floor)&&!headless()&&Core.atlas.isFound(b.fullIcon)&&b.inEditor);
+    public static final Boolf<Block> oresOnly=b->b instanceof OverlayFloor&&!headless()&&Core.atlas.isFound(b.fullIcon);
+    private static boolean headless(){return Vars.headless;}
     public static class SliderOption extends FilterOption{
-        final String name;final Floatp getter;final Floatc setter;final float min,max,step;
-        public SliderOption(String n,Floatp g,Floatc c,float mi,float ma,float s){name=n;getter=g;setter=c;min=mi;max=ma;step=s;}
-        @Override public void build(Table t){
-            Element b=t.add("@filter.option."+name).width(160f).left().style(Styles.outlineLabel).wrap().get();
-            Label vl=new Label("",Styles.outlineLabel);vl.setAlignment(Align.right);
-            Slider sl=new Slider(min,max,step,false);sl.setValue(getter.get());
-            Runnable ut=()->{
-                float v=getter.get();
-                if(step>=1f)vl.setText(String.valueOf(Math.round(v)));else vl.setText(Strings.fixed(v,step<0.05f?2:1));
-            };
-            ut.run();
-            sl.moved(v->{setter.get(v);ut.run();if(changed!=null)changed.run();});
-            t.add(vl).right().padLeft(4f).row();
-            t.add(sl).colspan(2).width(200f).padBottom(4f).row();
+        public final String name;
+        public final Floatp getter;
+        public final Floatc setter;
+        public final float min,max,step;
+        public SliderOption(String n,Floatp g,Floatc s,float mn,float mx,float st){
+            name=n;getter=g;setter=s;min=mn;max=mx;step=st;
+        }
+        @Override public void build(Table table){
+            table.add("@filter.option."+name).growX().left().style(Styles.outlineLabel);
+            Label val=table.label(()->Strings.autoFixed(getter.get(),2)).right().style(Styles.outlineLabel).get();
+            table.row();
+            table.slider(min,max,step,getter.get(),f->{
+                setter.get(f);
+                val.setText(Strings.autoFixed(f,2));
+                changed.run();
+            }).colspan(2).growX().row();
         }
     }
     public static class ToggleOption extends FilterOption{
-        final String name;final Boolp getter;final Boolc setter;
-        public ToggleOption(String n,Boolp g,Boolc c){name=n;getter=g;setter=c;}
-        @Override public void build(Table t){
-            t.add("@filter.option."+name).width(160f).left().style(Styles.outlineLabel).wrap();
-            t.check("",getter.get(),v->{setter.get(v);if(changed!=null)changed.run();}).right().padBottom(4f).row();
+        public final String name;
+        public final Boolp getter;
+        public final Boolc setter;
+        public ToggleOption(String n,Boolp g,Boolc s){
+            name=n;getter=g;setter=s;
+        }
+        @Override public void build(Table table){
+            table.check("@filter.option."+name,getter.get(),b->{
+                setter.get(b);
+                changed.run();
+            }).colspan(2).growX().left().padTop(4f).padBottom(4f).row();
         }
     }
     public static class BlockOption extends FilterOption{
-        final String name;final Prov<Block> supplier;final Cons<Block> consumer;final Boolf<Block> filter;
-        public BlockOption(String n,Prov<Block> s,Cons<Block> c,Boolf<Block> f){name=n;supplier=s;consumer=c;filter=f;}
-        @Override public void build(Table t){
-            t.button(b->b.image(supplier.get().uiIcon).size(24f).update(i->i.setDrawable(supplier.get().uiIcon)),()->{
-                BaseDialog d=new BaseDialog("@filter.option."+name);
-                d.cont.pane(pt->{
-                    int i=0;for(Block bl:Vars.content.blocks()){
-                        if(!filter.get(bl))continue;
-                        pt.image(bl.uiIcon).size(32f).pad(3f).get().clicked(()->{consumer.get(bl);d.hide();if(changed!=null)changed.run();});
-                        if(++i%10==0)pt.row();
+        public final String name;
+        public final Prov<Block> supplier;
+        public final Cons<Block> consumer;
+        public final Boolf<Block> filter;
+        public BlockOption(String n,Prov<Block> s,Cons<Block> c,Boolf<Block> f){
+            name=n;supplier=s;consumer=c;filter=f;
+        }
+        @Override public void build(Table table){
+            table.button(b->b.image(supplier.get().uiIcon).update(i->i.setDrawable(supplier.get().uiIcon)).size(24f),()->{
+                BaseDialog dialog=new BaseDialog("@filter.option."+name);
+                dialog.cont.pane(t->{
+                    int i=0;
+                    for(Block block:Vars.content.blocks()){
+                        if(!filter.get(block))continue;
+                        t.image(block.uiIcon).size(32f).pad(3f).tooltip(block.localizedName).get().clicked(()->{
+                            consumer.get(block);
+                            dialog.hide();
+                            changed.run();
+                        });
+                        if(++i%10==0)t.row();
                     }
-                }).size(Math.min(Core.graphics.getWidth()*0.9f,420f),340f);
-                d.addCloseButton();d.show();
-            }).size(36f).pad(2f).left();
-            t.add("@filter.option."+name).width(160f).left().padLeft(4f).style(Styles.outlineLabel).wrap().row();
+                });
+                dialog.addCloseButton();
+                dialog.show();
+            }).pad(4f).margin(8f);
+            table.add("@filter.option."+name).left().growX().style(Styles.outlineLabel).row();
         }
     }
 }
