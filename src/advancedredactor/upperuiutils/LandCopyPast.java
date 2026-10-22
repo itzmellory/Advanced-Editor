@@ -41,16 +41,20 @@ public class LandCopyPast{
     private static Element overlayElement;
     private static MapView hookedView;
     private static EditorTool savedVanillaTool;
-    private static Field extraDataField,floorDataField,overlayDataField;
-    private static final Vec2 tmpV1=new Vec2(),tmpV2=new Vec2(),tmpV3=new Vec2();
+    private static Field extraDataField,floorDataField,overlayDataField,gestureField;
+    private static final Vec2 tmpV1=new Vec2(),tmpV2=new Vec2();
     private static final Point2 tmpP1=new Point2();
     static{
         try{extraDataField=Tile.class.getDeclaredField("extraData");extraDataField.setAccessible(true);}catch(Throwable ignored){}
         try{floorDataField=Tile.class.getDeclaredField("floorData");floorDataField.setAccessible(true);}catch(Throwable ignored){}
         try{overlayDataField=Tile.class.getDeclaredField("overlayData");overlayDataField.setAccessible(true);}catch(Throwable ignored){}
+        try{gestureField=MapView.class.getDeclaredField("gestureDetector");gestureField.setAccessible(true);}catch(Throwable ignored){}
     }
     public static void init(){
         Events.run(Trigger.update,LandCopyPast::update);
+    }
+    public static Element getOverlayElement(){
+        return overlayElement;
     }
     public static int getExtra(Tile t){try{if(extraDataField!=null)return extraDataField.getInt(t);}catch(Throwable ignored){}return 0;}
     public static void setExtra(Tile t,int val){try{if(extraDataField!=null)extraDataField.setInt(t,val);}catch(Throwable ignored){}}
@@ -58,12 +62,21 @@ public class LandCopyPast{
     public static void setFloorData(Tile t,byte val){try{if(floorDataField!=null)floorDataField.setByte(t,val);}catch(Throwable ignored){}}
     public static byte getOverlayData(Tile t){try{if(overlayDataField!=null)return overlayDataField.getByte(t);}catch(Throwable ignored){}return 0;}
     public static void setOverlayData(Tile t,byte val){try{if(overlayDataField!=null)overlayDataField.setByte(t,val);}catch(Throwable ignored){}}
+    public static void cancelMapGestures(MapView view){
+        try{
+            if(gestureField!=null){
+                GestureDetector gd=(GestureDetector)gestureField.get(view);
+                if(gd!=null)gd.cancel();
+            }
+        }catch(Throwable ignored){}
+    }
     public static void lockCamera(MapView view){
         try{
             lockedOx=Reflect.get(MapView.class,view,"offsetx");
             lockedOy=Reflect.get(MapView.class,view,"offsety");
             lockedZoom=Reflect.get(MapView.class,view,"zoom");
             camLocked=true;
+            cancelMapGestures(view);
         }catch(Throwable ignored){}
     }
     public static void unlockCamera(){
@@ -76,6 +89,31 @@ public class LandCopyPast{
             Reflect.set(MapView.class,view,"offsety",lockedOy);
             Reflect.set(MapView.class,view,"zoom",lockedZoom);
         }catch(Throwable ignored){}
+    }
+    public static boolean calcGridBounds(MapView view,float[] out){
+        try{
+            float ox=Reflect.get(MapView.class,view,"offsetx");
+            float oy=Reflect.get(MapView.class,view,"offsety");
+            float zoom=Reflect.get(MapView.class,view,"zoom");
+            int mw=Vars.editor.width(),mh=Vars.editor.height();
+            if(mw<=0||mh<=0)return false;
+            float ratio=1f/((float)mw/mh);
+            float size=Math.min(view.getWidth(),view.getHeight());
+            float sclw=size*zoom;
+            float sclh=size*zoom*ratio;
+            float localBlX=view.getWidth()/2f+ox*zoom-sclw/2f;
+            float localBlY=view.getHeight()/2f+oy*zoom-sclh/2f;
+            out[0]=localBlX;
+            out[1]=localBlY;
+            out[2]=sclw/mw;
+            out[3]=sclh/mh;
+            return true;
+        }catch(Throwable e){
+            return false;
+        }
+    }
+    public static Point2 projectTile(MapView view,float localX,float localY){
+        return projectRaw(view,localX,localY);
     }
     public static Point2 projectRaw(MapView view,float x,float y){
         try{
@@ -109,7 +147,8 @@ public class LandCopyPast{
             float vx=(tx/Vars.editor.width())*sclwidth+offsetx*zoom-sclwidth/2f+view.getWidth()/2f;
             float vy=(ty/Vars.editor.height())*sclheight+offsety*zoom-sclheight/2f+view.getHeight()/2f;
             Vec2 stage=view.localToStageCoordinates(out.set(vx,vy));
-            return overlay.stageToLocalCoordinates(stage);
+            if(overlay!=null)return overlay.stageToLocalCoordinates(stage);
+            return stage;
         }catch(Throwable e){
             return out.set(0f,0f);
         }
