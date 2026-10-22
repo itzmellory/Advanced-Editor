@@ -5,7 +5,6 @@ import arc.math.*;
 import arc.math.geom.*;
 import arc.scene.ui.layout.*;
 import arc.struct.*;
-import arc.util.*;
 import mindustry.*;
 import mindustry.editor.*;
 import mindustry.graphics.*;
@@ -58,10 +57,10 @@ public class CustomShapeManager{
             x2=x1;
         }else{
             int d=Math.max(adx,ady);
-            x2=x1+d*(dx>0?1:-1);
-            y2=y1+d*(dy>0?1:-1);
+            x2=x1+d*(dx>=0?1:-1);
+            y2=y1+d*(dy>=0?1:-1);
         }
-        return new Point2(Mathf.clamp(x2,0,Vars.editor.width()-1),Mathf.clamp(y2,0,Vars.editor.height()-1));
+        return new Point2(x2,y2);
     }
     public static void traceLine(int x1,int y1,int x2,int y2,Intc2 cons){
         int dx=Math.abs(x2-x1),sx=x1<x2?1:-1;
@@ -107,26 +106,21 @@ public class CustomShapeManager{
     }
     public static void drawMaskEdges(MapView view,IntSet mask){
         try{
-            Float ox=(Float)Reflect.get(view,"offsetx");
-            Float oy=(Float)Reflect.get(view,"offsety");
-            Float zoom=(Float)Reflect.get(view,"zoom");
-            if(ox==null||oy==null||zoom==null)return;
-            float mapW=Vars.editor.width(),mapH=Vars.editor.height();
-            if(mapW<=0||mapH<=0)return;
-            float size=Math.min(view.getWidth(),view.getHeight());
-            float scl=size/Math.max(mapW,mapH)*zoom;
-            float mapBlX=view.x+view.getWidth()/2f+ox*zoom-mapW*scl/2f;
-            float mapBlY=view.y+view.getHeight()/2f+oy*zoom-mapH*scl/2f;
+            Vec2 p0=LandCopyPast.unprojectTile(view,0,0);
+            float x0=p0.x,y0=p0.y;
+            Vec2 p1=LandCopyPast.unprojectTile(view,1,1);
+            float tileW=Math.abs(p1.x-x0),tileH=Math.abs(p1.y-y0);
+            if(tileW<=0.0001f||tileH<=0.0001f)return;
             Draw.color(Pal.accent);
             Lines.stroke(Scl.scl(1.8f));
             mask.each(packed->{
                 int x=Point2.x(packed),y=Point2.y(packed);
-                float px=mapBlX+x*scl;
-                float py=mapBlY+y*scl;
-                if(!mask.contains(Point2.pack(x-1,y)))Lines.line(px,py,px,py+scl);
-                if(!mask.contains(Point2.pack(x+1,y)))Lines.line(px+scl,py,px+scl,py+scl);
-                if(!mask.contains(Point2.pack(x,y-1)))Lines.line(px,py,px+scl,py);
-                if(!mask.contains(Point2.pack(x,y+1)))Lines.line(px,py+scl,px+scl,py+scl);
+                float px=x0+x*tileW;
+                float py=y0+y*tileH;
+                if(!mask.contains(Point2.pack(x-1,y)))Lines.line(px,py,px,py+tileH);
+                if(!mask.contains(Point2.pack(x+1,y)))Lines.line(px+tileW,py,px+tileW,py+tileH);
+                if(!mask.contains(Point2.pack(x,y-1)))Lines.line(px,py,px+tileW,py);
+                if(!mask.contains(Point2.pack(x,y+1)))Lines.line(px,py+tileH,px+tileW,py+tileH);
             });
             Draw.reset();
         }catch(Throwable ignored){}
