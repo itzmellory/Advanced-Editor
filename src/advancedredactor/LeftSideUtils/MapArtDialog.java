@@ -30,10 +30,7 @@ public class MapArtDialog{
     public static final ObjectSet<Block> allowedBlocks=new ObjectSet<>();
     private static boolean initializedDefaults=false;
     public static void show(){
-        if(!initializedDefaults){
-            initDefaultAllowedBlocks();
-            initializedDefaults=true;
-        }
+        if(!initializedDefaults){initDefaultAllowedBlocks();initializedDefaults=true;}
         BaseDialog d=new BaseDialog(Core.bundle.get("editor.mapart.title","Pixel Art Generator"));
         Table main=new Table();
         Runnable[] rebuild=new Runnable[1];
@@ -92,10 +89,7 @@ public class MapArtDialog{
             }
             main.button(Core.bundle.get("editor.mapart.generate","Generate Art on Map"),Icon.ok,Styles.flatt,()->{
                 if(selectedFile==null){Vars.ui.showErrorMessage(Core.bundle.get("editor.mapart.needfile","Please select a PNG file first!"));return;}
-                if(style==ArtStyle.terrain&&!useAllBlocks&&allowedBlocks.isEmpty()){
-                    Vars.ui.showErrorMessage("Select at least 1 allowed block!");
-                    return;
-                }
+                if(style==ArtStyle.terrain&&!useAllBlocks&&allowedBlocks.isEmpty()){Vars.ui.showErrorMessage("Select at least 1 allowed block!");return;}
                 d.hide();
                 Vars.ui.loadAnd(()->MapArtGenerator.generate(selectedFile,artWidth,artHeight,style,layerMode,useAllBlocks,allowedBlocks));
             }).colspan(2).growX().height(46f).padTop(10f).row();
@@ -161,9 +155,11 @@ public class MapArtDialog{
                 if(tab[0]==2&&b.isFloor())continue;
                 if(!q.isEmpty()&&!b.localizedName.toLowerCase().contains(q)&&!b.name.toLowerCase().contains(q))continue;
                 Button btn=new Button(Styles.flatTogglet);
-                btn.setChecked(allowedBlocks.contains(b));
+                boolean sel=allowedBlocks.contains(b);
+                btn.setChecked(sel);
                 Image iconImg=new Image(b.uiIcon);
                 iconImg.setScaling(Scaling.fit);
+                iconImg.setColor(sel?Color.white:Color.darkGray);
                 Label checkMark=new Label(()->allowedBlocks.contains(b)?"[lime]✔[]":"");
                 checkMark.setAlignment(Align.topRight);
                 Stack st=new Stack(iconImg,checkMark);
@@ -171,13 +167,10 @@ public class MapArtDialog{
                 btn.clicked(()->{
                     if(allowedBlocks.contains(b))allowedBlocks.remove(b);
                     else allowedBlocks.add(b);
-                    btn.setChecked(allowedBlocks.contains(b));
+                    boolean ns=allowedBlocks.contains(b);
+                    btn.setChecked(ns);
+                    iconImg.setColor(ns?Color.white:Color.darkGray);
                     updateCount.run();
-                });
-                btn.update(()->{
-                    boolean sel=allowedBlocks.contains(b);
-                    btn.setChecked(sel);
-                    iconImg.setColor(sel?Color.white:new Color(0.25f,0.25f,0.25f,0.55f));
                 });
                 grid.add(btn).size(48f).pad(3f).tooltip(b.localizedName);
                 if(++cols%8==0)grid.row();
