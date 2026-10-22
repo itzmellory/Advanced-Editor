@@ -1,16 +1,15 @@
 package advancedredactor.upperuiutils;
-import arc.*;
 import arc.func.*;
 import arc.graphics.g2d.*;
 import arc.math.*;
 import arc.math.geom.*;
 import arc.scene.ui.layout.*;
 import arc.struct.*;
-import arc.util.*;
 import mindustry.*;
 import mindustry.editor.*;
 import mindustry.graphics.*;
 import mindustry.world.*;
+import arc.util.Reflect;
 public class CustomShapeManager{
     public enum BrushShape{
         circle("●","Circle"),
@@ -52,27 +51,17 @@ public class CustomShapeManager{
     }
     public static Point2 snap45(int x1,int y1,int x2,int y2){
         int dx=x2-x1,dy=y2-y1;
-        if(dx==0&&dy==0)return new Point2(x1,y1);
         int adx=Math.abs(dx),ady=Math.abs(dy);
-        int sx=dx>=0?1:-1,sy=dy>=0?1:-1;
-        int ex,ey;
-        if(adx>ady*2){
-            ex=x1+sx*adx;
-            ey=y1;
-        }else if(ady>adx*2){
-            ex=x1;
-            ey=y1+sy*ady;
+        if(adx>ady*2.414f){
+            y2=y1;
+        }else if(ady>adx*2.414f){
+            x2=x1;
         }else{
-            int dist=Math.max(adx,ady);
-            int maxDistX=sx>0?(Vars.editor.width()-1-x1):x1;
-            int maxDistY=sy>0?(Vars.editor.height()-1-y1):y1;
-            dist=Math.min(dist,Math.min(maxDistX,maxDistY));
-            ex=x1+sx*dist;
-            ey=y1+sy*dist;
+            int d=Math.max(adx,ady);
+            x2=x1+d*(dx>0?1:-1);
+            y2=y1+d*(dy>0?1:-1);
         }
-        ex=Mathf.clamp(ex,0,Vars.editor.width()-1);
-        ey=Mathf.clamp(ey,0,Vars.editor.height()-1);
-        return new Point2(ex,ey);
+        return new Point2(Mathf.clamp(x2,0,Vars.editor.width()-1),Mathf.clamp(y2,0,Vars.editor.height()-1));
     }
     public static void traceLine(int x1,int y1,int x2,int y2,Intc2 cons){
         int dx=Math.abs(x2-x1),sx=x1<x2?1:-1;
