@@ -37,7 +37,6 @@ public class LandCopyPast{
     private static Table pasteActionBar;
     private static Element hookedView;
     private static Field extraDataField,floorDataField,overlayDataField;
-    private static EditorTool tempToolStorage;
     static{
         try{extraDataField=Tile.class.getDeclaredField("extraData");extraDataField.setAccessible(true);}catch(Throwable ignored){}
         try{floorDataField=Tile.class.getDeclaredField("floorData");floorDataField.setAccessible(true);}catch(Throwable ignored){}
@@ -101,27 +100,25 @@ public class LandCopyPast{
     private static void removePasteBar(){
         if(pasteActionBar!=null){pasteActionBar.remove();pasteActionBar=null;}
     }
-    public static Vec2 viewMapGeometry(MapView view,float[] out){
+    public static boolean viewMapGeometry(MapView view,float[] out){
         try{
             Float ox=(Float)Reflect.get(view,"offsetx");
             Float oy=(Float)Reflect.get(view,"offsety");
             Float zoom=(Float)Reflect.get(view,"zoom");
-            if(ox==null||oy==null||zoom==null)return null;
+            if(ox==null||oy==null||zoom==null)return false;
             float mapW=Vars.editor.width(),mapH=Vars.editor.height();
-            if(mapW<=0||mapH<=0)return null;
-            float ratio=1f/(mapW/mapH);
+            if(mapW<=0||mapH<=0)return false;
             float size=Math.min(view.getWidth(),view.getHeight());
-            float sclW=size*zoom,sclH=size*zoom*ratio;
-            float tileW=sclW/mapW,tileH=sclH/mapH;
-            float mapBlX=view.getWidth()/2f+ox*zoom-sclW/2f;
-            float mapBlY=view.getHeight()/2f+oy*zoom-sclH/2f;
-            out[0]=mapBlX;out[1]=mapBlY;out[2]=tileW;out[3]=tileH;
-            return Tmp.v1.set(mapBlX,mapBlY);
-        }catch(Throwable e){return null;}
+            float scl=size/Math.max(mapW,mapH)*zoom;
+            float mapBlX=view.getWidth()/2f+ox*zoom-mapW*scl/2f;
+            float mapBlY=view.getHeight()/2f+oy*zoom-mapH*scl/2f;
+            out[0]=mapBlX;out[1]=mapBlY;out[2]=scl;out[3]=scl;
+            return true;
+        }catch(Throwable e){return false;}
     }
     private static Point2 project(MapView view,float x,float y){
         float[] g=new float[4];
-        if(viewMapGeometry(view,g)==null)return new Point2(0,0);
+        if(!viewMapGeometry(view,g))return new Point2(0,0);
         return new Point2(Mathf.floor((x-g[0])/g[2]),Mathf.floor((y-g[1])/g[3]));
     }
     private static Point2 mouseTile(MapView view){
@@ -131,19 +128,18 @@ public class LandCopyPast{
     private static boolean hitPasteRegion(MapView view,float x,float y){
         if(clipboard==null)return false;
         float[] g=new float[4];
-        if(viewMapGeometry(view,g)==null)return false;
+        if(!viewMapGeometry(view,g))return false;
         float rx=g[0]+pasteOriginX*g[2];
         float ry=g[1]+pasteOriginY*g[3];
         float rw=clipboard.width*g[2];
         float rh=clipboard.height*g[3];
         return x>=rx&&x<=rx+rw&&y>=ry&&y<=ry+rh;
     }
-    private static void freezeCamera(MapView view){
-        tempToolStorage=view.getTool();
-        view.setTool(EditorTool.line);
+    private static void lockPan(MapView view){
+        try{Reflect.set(view,"drawing",true);}catch(Throwable ignored){}
     }
-    private static void unfreezeCamera(MapView view){
-        if(tempToolStorage!=null){view.setTool(tempToolStorage);tempToolStorage=null;}
+    private static void unlockPan(MapView view){
+        try{Reflect.set(view,"drawing",false);}catch(Throwable ignored){}
     }
     private static boolean shouldInterceptVanillaTool(EditorTool tool){
         if(tool==EditorTool.line&&(CustomShapeManager.line45Mode||CustomShapeManager.currentShape!=BrushShape.circle||Vars.editor.brushSize>20f))return true;
@@ -173,7 +169,7 @@ public class LandCopyPast{
                     selecting=true;
                     selStartX=selEndX=Mathf.clamp(p.x,0,Vars.editor.width()-1);
                     selStartY=selEndY=Mathf.clamp(p.y,0,Vars.editor.height()-1);
-                    freezeCamera(view);
+                    lockPan(view);
                     event.cancel();
                     event.stop();
                     return true;
@@ -185,7 +181,7 @@ public class LandCopyPast{
                         dragStartTileY=p.y;
                         dragStartOriginX=pasteOriginX;
                         dragStartOriginY=pasteOriginY;
-                        freezeCamera(view);
+                        lockPan(view);
                         event.cancel();
                         event.stop();
                         return true;
@@ -204,7 +200,7 @@ public class LandCopyPast{
                         lastDrawY=p.y;
                         applyToolStamp(tool,p.x,p.y);
                     }
-                    freezeCamera(view);
+                    lockPan(view);
                     event.cancel();
                     event.stop();
                     return true;
@@ -244,7 +240,7 @@ public class LandCopyPast{
                     return;
                 }
                 if(drawingCustom){
-                    EditorTool tool=tempToolStorage!=null?tempToolStorage:view.getTool();
+                    EditorTool tool=view.getTool();
                     CustomShapeManager.traceLine(lastDrawX,lastDrawY,p.x,p.y,(lx,ly)->applyToolStamp(tool,lx,ly));
                     lastDrawX=p.x;
                     lastDrawY=p.y;
@@ -254,11 +250,10 @@ public class LandCopyPast{
             }
             @Override public void touchUp(InputEvent event,float x,float y,int pointer,KeyCode button){
                 if(pointer!=0||button!=KeyCode.mouseLeft)return;
-                unfreezeCamera(view);
-                Point2 p=project(view,x,y);
+                unlockPan(view);
                 if(selecting&&(mode==Mode.copy||mode==Mode.cut)){
-                    selEndX=Mathf.clamp(p.x,0,Vars.editor.width()-1);
-                    selEndY=Mathf.clamp(p.y,0,Vars.editor.height()-1);
+                    selEndX=Mathf.clamp(project(view,x,y).x,0,Vars.editor.width()-1);
+                    selEndY=Mathf.clamp(project(view,x,y).y,0,Vars.editor.height()-1);
                     captureSelection(mode==Mode.cut);
                     selecting=false;
                     setMode(Mode.paste);
@@ -336,7 +331,7 @@ public class LandCopyPast{
     private static void drawOverlayContent(MapView view){
         try{
             float[] g=new float[4];
-            if(viewMapGeometry(view,g)==null)return;
+            if(!viewMapGeometry(view,g))return;
             float mapBlX=view.x+g[0],mapBlY=view.y+g[1],tileW=g[2],tileH=g[3];
             if(selecting&&(mode==Mode.copy||mode==Mode.cut)){
                 int minX=Math.min(selStartX,selEndX),maxX=Math.max(selStartX,selEndX)+1;
@@ -361,10 +356,18 @@ public class LandCopyPast{
                 Draw.color(draggingHandle?Color.sky:Pal.accent);
                 Lines.stroke(2f);
                 Lines.rect(rx,ry,rw,rh);
+                float hs=Scl.scl(28f);
+                float hx=rx+rw,hy=ry+rh;
+                Draw.color(Pal.darkerGray,0.9f);
+                Fill.rect(hx,hy,hs,hs);
+                Draw.color(draggingHandle?Color.sky:Pal.accent);
+                Lines.rect(hx-hs/2f,hy-hs/2f,hs,hs);
+                Draw.color(Color.white);
+                Draw.rect(Icon.move.getRegion(),hx,hy,hs*0.75f,hs*0.75f);
                 Draw.reset();
             }
             if(mode==Mode.none){
-                EditorTool tool=tempToolStorage!=null?tempToolStorage:view.getTool();
+                EditorTool tool=view.getTool();
                 Point2 mp=mouseTile(view);
                 if(drawingLine&&tool==EditorTool.line){
                     CustomShapeManager.drawLineSteppedOutline(view,lineStartX,lineStartY,lineEndX,lineEndY,Vars.editor.brushSize,CustomShapeManager.currentShape);
@@ -616,4 +619,4 @@ public class LandCopyPast{
             }
         }
     }
-                        }
+                    }
