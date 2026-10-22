@@ -5,7 +5,6 @@ import arc.graphics.*;
 import arc.graphics.g2d.*;
 import arc.input.*;
 import arc.math.*;
-import arc.math.geom.*;
 import arc.scene.*;
 import arc.scene.event.*;
 import arc.scene.style.*;
@@ -27,10 +26,11 @@ public class StencilManager{
     public static Fi currentFile;
     public static int targetW=100,targetH=100;
     public static float offsetX=0f,offsetY=0f,opacity=0.45f;
-    public static boolean enabled=true,moveMode=false;
+    public static boolean enabled=true;
     private static Element hookedView;
     private static boolean dragging=false;
     private static float dragStartWorldX,dragStartWorldY,startOffsetX,startOffsetY;
+    private static EditorTool tempToolStorage;
     public static void init(){
         Events.run(Trigger.update,StencilManager::update);
     }
@@ -42,28 +42,22 @@ public class StencilManager{
         MapView view=Vars.ui.editor.getView();
         if(view==null||view.parent==null)return;
         boolean hasOverlay=false;
-        for(Element e:view.parent.getChildren()){
-            if("stencil-overlay".equals(e.name)){
-                hasOverlay=true;
-                break;
-            }
-        }
-        if(hookedView!=view||!hasOverlay){
-            hookedView=view;
-            injectOverlayElement(view);
-        }
+        for(Element e:view.parent.getChildren()){if("stencil-overlay".equals(e.name)){hasOverlay=true;break;}}
+        if(hookedView!=view||!hasOverlay){hookedView=view;injectOverlayElement(view);}
     }
-    private static boolean hitCornerHandle(MapView view,float x,float y){
+    private static boolean hitStencilRegion(MapView view,float x,float y){
         float[] g=new float[4];
         if(LandCopyPast.viewMapGeometry(view,g)==null)return false;
-        float rx=g[0]+offsetX*g[2];
-        float ry=g[1]+offsetY*g[3];
-        float rw=targetW*g[2];
-        float rh=targetH*g[3];
-        float hx=rx+rw,hy=ry+rh;
-        float hs=Scl.scl(44f);
-        if(Mathf.within(x,y,hx,hy,hs))return true;
-        return moveMode&&x>=rx&&x<=rx+rw&&y>=ry&&y<=ry+rh;
+        float rx=g[0]+offsetX*g[2],ry=g[1]+offsetY*g[3];
+        float rw=targetW*g[2],rh=targetH*g[3];
+        return x>=rx&&x<=rx+rw&&y>=ry&&y<=ry+rh;
+    }
+    private static void freezeCamera(MapView view){
+        tempToolStorage=view.getTool();
+        view.setTool(EditorTool.line);
+    }
+    private static void unfreezeCamera(MapView view){
+        if(tempToolStorage!=null){view.setTool(tempToolStorage);tempToolStorage=null;}
     }
     private static void injectOverlayElement(MapView view){
         Group parent=view.parent;
@@ -73,22 +67,12 @@ public class StencilManager{
                 try{
                     float[] g=new float[4];
                     if(LandCopyPast.viewMapGeometry(view,g)==null)return;
-                    float stencilX=view.x+g[0]+offsetX*g[2];
-                    float stencilY=view.y+g[1]+offsetY*g[3];
-                    float rw=targetW*g[2];
-                    float rh=targetH*g[3];
+                    float stencilX=view.x+g[0]+offsetX*g[2],stencilY=view.y+g[1]+offsetY*g[3];
+                    float rw=targetW*g[2],rh=targetH*g[3];
                     Draw.color(1f,1f,1f,opacity);
                     Draw.rect(region,stencilX+rw/2f,stencilY+rh/2f,rw,rh);
-                    Lines.stroke(2f,dragging||moveMode?Pal.accent:Color.lightGray);
+                    Lines.stroke(2f,dragging?Color.sky:Pal.accent);
                     Lines.rect(stencilX,stencilY,rw,rh);
-                    float hs=Scl.scl(28f);
-                    float hx=stencilX+rw,hy=stencilY+rh;
-                    Draw.color(Pal.darkerGray,0.9f);
-                    Fill.rect(hx,hy,hs,hs);
-                    Draw.color(dragging||moveMode?Pal.accent:Color.white);
-                    Lines.rect(hx-hs/2f,hy-hs/2f,hs,hs);
-                    Draw.color(Color.white);
-                    Draw.rect(Icon.move.getRegion(),hx,hy,hs*0.75f,hs*0.75f);
                     Draw.reset();
                 }catch(Throwable ignored){}
             }
@@ -99,25 +83,20 @@ public class StencilManager{
         parent.addChild(overlay);
         view.addCaptureListener(new ElementGestureListener(){
             @Override public void pan(InputEvent event,float x,float y,float deltaX,float deltaY){
-                if(dragging){
-                    event.cancel();
-                    event.stop();
-                }
+                if(dragging){event.cancel();event.stop();}
             }
         });
         view.addCaptureListener(new InputListener(){
             @Override public boolean touchDown(InputEvent event,float x,float y,int pointer,KeyCode button){
                 if(!enabled||region==null||button!=KeyCode.mouseLeft)return false;
-                if(!hitCornerHandle(view,x,y))return false;
+                if(!hitStencilRegion(view,x,y))return false;
                 float[] g=new float[4];
                 if(LandCopyPast.viewMapGeometry(view,g)==null)return false;
-                float tx=(x-g[0])/g[2];
-                float ty=(y-g[1])/g[3];
+                float tx=(x-g[0])/g[2],ty=(y-g[1])/g[3];
                 dragging=true;
-                dragStartWorldX=tx;
-                dragStartWorldY=ty;
-                startOffsetX=offsetX;
-                startOffsetY=offsetY;
+                dragStartWorldX=tx;dragStartWorldY=ty;
+                startOffsetX=offsetX;startOffsetY=offsetY;
+                freezeCamera(view);
                 event.cancel();
                 event.stop();
                 return true;
@@ -126,48 +105,37 @@ public class StencilManager{
                 if(!dragging)return;
                 float[] g=new float[4];
                 if(LandCopyPast.viewMapGeometry(view,g)==null)return;
-                float tx=(x-g[0])/g[2];
-                float ty=(y-g[1])/g[3];
+                float tx=(x-g[0])/g[2],ty=(y-g[1])/g[3];
                 offsetX=startOffsetX+(tx-dragStartWorldX);
                 offsetY=startOffsetY+(ty-dragStartWorldY);
                 event.cancel();
                 event.stop();
             }
             @Override public void touchUp(InputEvent event,float x,float y,int pointer,KeyCode button){
-                if(dragging){
-                    dragging=false;
-                    event.cancel();
-                    event.stop();
-                }
+                unfreezeCamera(view);
+                if(dragging){dragging=false;event.cancel();event.stop();}
             }
         });
     }
     public static void loadStencil(Fi file,int w,int h){
         try{
             Pixmap src=new Pixmap(file);
-            targetW=Math.max(1,w);
-            targetH=Math.max(1,h);
+            targetW=Math.max(1,w);targetH=Math.max(1,h);
             Pixmap scaled=scalePixmap(src,targetW,targetH);
             src.dispose();
             if(texture!=null)texture.dispose();
             texture=new Texture(scaled);
             region=new TextureRegion(texture);
             scaled.dispose();
-            currentFile=file;
-            enabled=true;
-        }catch(Exception e){
-            Vars.ui.showException("@editor.errorload",e);
-        }
+            currentFile=file;enabled=true;
+        }catch(Exception e){Vars.ui.showException("@editor.errorload",e);}
     }
     public static Pixmap scalePixmap(Pixmap src,int w,int h){
         Pixmap dst=new Pixmap(w,h);
         int sw=src.width,sh=src.height;
         for(int y=0;y<h;y++){
             int sy=Math.min(sh-1,(y*sh)/h);
-            for(int x=0;x<w;x++){
-                int sx=Math.min(sw-1,(x*sw)/w);
-                dst.setRaw(x,y,src.getRaw(sx,sy));
-            }
+            for(int x=0;x<w;x++)dst.setRaw(x,y,src.getRaw(Math.min(sw-1,(x*sw)/w),sy));
         }
         return dst;
     }
@@ -221,10 +189,8 @@ public class StencilManager{
             }).width(140f).get();
             t.row();
             t.button(Core.bundle.get("editor.stencil.fitmap","Fit Map Size"),Styles.flatt,()->{
-                targetW=Vars.editor.width();
-                targetH=Vars.editor.height();
-                wf.setText(String.valueOf(targetW));
-                hf.setText(String.valueOf(targetH));
+                targetW=Vars.editor.width();targetH=Vars.editor.height();
+                wf.setText(String.valueOf(targetW));hf.setText(String.valueOf(targetH));
                 if(currentFile!=null)loadStencil(currentFile,targetW,targetH);
             }).colspan(2).growX().height(36f).row();
             t.button(Core.bundle.get("editor.stencil.selectpng","Select PNG..."),Icon.fileImage,Styles.flatt,()->{
@@ -242,17 +208,13 @@ public class StencilManager{
             TextField oyf=t.field(Strings.fixed(offsetY,0),s->offsetY=Strings.parseFloat(s,offsetY)).width(140f).get();
             t.row();
             t.button(Core.bundle.get("editor.stencil.center","Center on Map"),Styles.flatt,()->{
-                offsetX=(Vars.editor.width()-targetW)/2f;
-                offsetY=(Vars.editor.height()-targetH)/2f;
-                oxf.setText(Strings.fixed(offsetX,0));
-                oyf.setText(Strings.fixed(offsetY,0));
+                offsetX=(Vars.editor.width()-targetW)/2f;offsetY=(Vars.editor.height()-targetH)/2f;
+                oxf.setText(Strings.fixed(offsetX,0));oyf.setText(Strings.fixed(offsetY,0));
             }).colspan(2).growX().height(36f).row();
             t.check(Core.bundle.get("editor.stencil.enable","Show Stencil"),enabled,v->enabled=v).colspan(2).left().row();
-            t.check(Core.bundle.get("editor.stencil.movemode","Drag Anywhere Inside Stencil"),moveMode,v->moveMode=v).colspan(2).left().row();
             t.button(Core.bundle.get("editor.stencil.clear","Clear Stencil"),Icon.trash,Styles.flatt,()->{
                 if(texture!=null){texture.dispose();texture=null;region=null;}
                 currentFile=null;
-                moveMode=false;
                 rebuild[0].run();
             }).colspan(2).growX().height(38f).padTop(6f).row();
         };
