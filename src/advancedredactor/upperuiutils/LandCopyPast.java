@@ -37,15 +37,15 @@ public class LandCopyPast{
     private static Table pasteActionBar;
     private static Element hookedView;
     private static EditorTool savedVanillaTool;
-    private static Field extraDataField,floorDataField,overlayDataField,gestureField;
-    private static Method projectMethod,unprojectMethod;
+    private static Field extraDataField,floorDataField,overlayDataField,gestureField,offsetXField,offsetYField,zoomField;
     static{
         try{extraDataField=Tile.class.getDeclaredField("extraData");extraDataField.setAccessible(true);}catch(Throwable ignored){}
         try{floorDataField=Tile.class.getDeclaredField("floorData");floorDataField.setAccessible(true);}catch(Throwable ignored){}
         try{overlayDataField=Tile.class.getDeclaredField("overlayData");overlayDataField.setAccessible(true);}catch(Throwable ignored){}
         try{gestureField=MapView.class.getDeclaredField("gestureDetector");gestureField.setAccessible(true);}catch(Throwable ignored){}
-        try{projectMethod=MapView.class.getDeclaredMethod("project",float.class,float.class);projectMethod.setAccessible(true);}catch(Throwable ignored){}
-        try{unprojectMethod=MapView.class.getDeclaredMethod("unproject",int.class,int.class);unprojectMethod.setAccessible(true);}catch(Throwable ignored){}
+        try{offsetXField=MapView.class.getDeclaredField("offsetx");offsetXField.setAccessible(true);}catch(Throwable ignored){}
+        try{offsetYField=MapView.class.getDeclaredField("offsety");offsetYField.setAccessible(true);}catch(Throwable ignored){}
+        try{zoomField=MapView.class.getDeclaredField("zoom");zoomField.setAccessible(true);}catch(Throwable ignored){}
     }
     public static void init(){
         Events.run(Trigger.update,LandCopyPast::update);
@@ -59,28 +59,40 @@ public class LandCopyPast{
     public static void cancelMapGestures(MapView view){
         try{
             if(gestureField!=null){
-                arc.input.GestureDetector gd=(arc.input.GestureDetector)gestureField.get(view);
+                GestureDetector gd=(GestureDetector)gestureField.get(view);
                 if(gd!=null)gd.cancel();
             }
         }catch(Throwable ignored){}
     }
-    public static Point2 projectTile(MapView view,float vx,float vy){
+    public static boolean calcGridBounds(MapView view,float[] out){
         try{
-            if(projectMethod!=null){
-                Point2 p=(Point2)projectMethod.invoke(view,vx,vy);
-                if(p!=null)return Tmp.p1.set(p.x,p.y);
-            }
-        }catch(Throwable ignored){}
-        return Tmp.p1.set(0,0);
+            if(offsetXField==null||offsetYField==null||zoomField==null)return false;
+            float ox=offsetXField.getFloat(view);
+            float oy=offsetYField.getFloat(view);
+            float zoom=zoomField.getFloat(view);
+            int mw=Vars.editor.width(),mh=Vars.editor.height();
+            if(mw<=0||mh<=0)return false;
+            float ratio=1f/((float)mw/mh);
+            float size=Math.min(view.getWidth(),view.getHeight());
+            float sclw=size*zoom;
+            float sclh=size*zoom*ratio;
+            float localBlX=view.getWidth()/2f+ox*zoom-sclw/2f;
+            float localBlY=view.getHeight()/2f+oy*zoom-sclh/2f;
+            out[0]=localBlX;
+            out[1]=localBlY;
+            out[2]=sclw/mw;
+            out[3]=sclh/mh;
+            return true;
+        }catch(Throwable e){
+            return false;
+        }
     }
-    public static Vec2 unprojectTile(MapView view,int tx,int ty){
-        try{
-            if(unprojectMethod!=null){
-                Vec2 v=(Vec2)unprojectMethod.invoke(view,tx,ty);
-                if(v!=null)return Tmp.v1.set(view.x+v.x,view.y+v.y);
-            }
-        }catch(Throwable ignored){}
-        return Tmp.v1.set(0f,0f);
+    public static Point2 projectTile(MapView view,float localX,float localY){
+        float[] g=new float[4];
+        if(!calcGridBounds(view,g))return Tmp.p1.set(0,0);
+        int tx=Mathf.floor((localX-g[0])/g[2]);
+        int ty=Mathf.floor((localY-g[1])/g[3]);
+        return Tmp.p1.set(tx,ty);
     }
     private static void refreshRenderer(){
         try{
@@ -343,15 +355,13 @@ public class LandCopyPast{
     }
     private static void drawOverlayContent(MapView view){
         try{
-            Vec2 p0=unprojectTile(view,0,0);
-            float x0=p0.x,y0=p0.y;
-            Vec2 p1=unprojectTile(view,1,1);
-            float tileW=Math.abs(p1.x-x0),tileH=Math.abs(p1.y-y0);
-            if(tileW<=0.0001f||tileH<=0.0001f)return;
+            float[] g=new float[4];
+            if(!calcGridBounds(view,g))return;
+            float baseX=view.x+g[0],baseY=view.y+g[1],tileW=g[2],tileH=g[3];
             if(selecting&&(mode==Mode.copy||mode==Mode.cut)){
                 int minX=Math.min(selStartX,selEndX),maxX=Math.max(selStartX,selEndX)+1;
                 int minY=Math.min(selStartY,selEndY),maxY=Math.max(selStartY,selEndY)+1;
-                float rx=x0+minX*tileW,ry=y0+minY*tileH;
+                float rx=baseX+minX*tileW,ry=baseY+minY*tileH;
                 float rw=(maxX-minX)*tileW,rh=(maxY-minY)*tileH;
                 Draw.color(Pal.accent,0.22f);
                 Fill.crect(rx,ry,rw,rh);
@@ -362,7 +372,7 @@ public class LandCopyPast{
             }
             if(mode==Mode.paste&&clipboard!=null){
                 clipboard.ensureTexture();
-                float rx=x0+pasteOriginX*tileW,ry=y0+pasteOriginY*tileH;
+                float rx=baseX+pasteOriginX*tileW,ry=baseY+pasteOriginY*tileH;
                 float rw=clipboard.width*tileW,rh=clipboard.height*tileH;
                 if(clipboard.previewRegion!=null){
                     Draw.color(1f,1f,1f,0.65f);
@@ -639,4 +649,4 @@ public class LandCopyPast{
             }
         }
     }
-}
+            }
