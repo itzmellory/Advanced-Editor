@@ -5,6 +5,7 @@ import arc.scene.ui.*;
 import arc.scene.ui.layout.*;
 import arc.util.*;
 import mindustry.*;
+import mindustry.content.*;
 import mindustry.gen.*;
 import mindustry.maps.filters.*;
 import mindustry.ui.*;
@@ -13,6 +14,7 @@ import mindustry.world.*;
 import mindustry.world.blocks.environment.*;
 public class ModFilterOptions{
     public static final Boolf<Block> floorsOnly=b->(b instanceof Floor&&!(b instanceof OverlayFloor))&&!headless()&&Core.atlas.isFound(b.fullIcon);
+    public static final Boolf<Block> floorsOptional=b->b==Blocks.air||((b instanceof Floor&&!(b instanceof OverlayFloor))&&!headless()&&Core.atlas.isFound(b.fullIcon));
     public static final Boolf<Block> wallsOnly=b->(!b.synthetic()&&!(b instanceof Floor)&&!headless()&&Core.atlas.isFound(b.fullIcon)&&b.inEditor);
     public static final Boolf<Block> oresOnly=b->b instanceof OverlayFloor&&!headless()&&Core.atlas.isFound(b.fullIcon);
     private static boolean headless(){return Vars.headless;}
@@ -64,7 +66,7 @@ public class ModFilterOptions{
                     int i=0;
                     for(Block block:Vars.content.blocks()){
                         if(!filter.get(block))continue;
-                        t.image(block.uiIcon).size(32f).pad(3f).tooltip(block.localizedName).get().clicked(()->{
+                        t.image(block.uiIcon).size(32f).pad(3f).tooltip(block==Blocks.air?"Any Floor":block.localizedName).get().clicked(()->{
                             consumer.get(block);
                             dialog.hide();
                             changed.run();
