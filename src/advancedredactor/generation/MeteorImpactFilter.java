@@ -16,7 +16,7 @@ public class MeteorImpactFilter extends GenerateFilter{
     public Block ore=Blocks.oreThorium;
     public float count=3f;
     public float radius=26f;
-    public floatspikiness=0.45f;
+    public float spikiness=0.45f;
     public float oreChance=0.22f;
     @Override public String name(){return Core.bundle.get("filter.meteorimpact.name","Meteor Impacts");}
     @Override public char icon(){return Iconc.blockThoriumWallLarge;}
@@ -29,7 +29,7 @@ public class MeteorImpactFilter extends GenerateFilter{
             new BlockOption("ore",()->ore,b->ore=b,oresOnly),
             new SliderOption("count",()->count,f->count=f,1f,15f,1f),
             new SliderOption("radius",()->radius,f->radius=f,10f,80f,1f),
-            new SliderOption("spikiness",()->floatspikiness,f->floatspikiness=f,0.1f,1f,0.05f),
+            new SliderOption("spikiness",()->spikiness,f->spikiness=f,0.1f,1f,0.05f),
             new SliderOption("oreChance",()->oreChance,f->oreChance=f,0f,0.6f,0.02f)
         };
     }
@@ -49,12 +49,12 @@ public class MeteorImpactFilter extends GenerateFilter{
             if(dst>R*1.35f)continue;
             float ang=Angles.angle(cx,cy,in.x,in.y)*Mathf.degRad;
             float rayNoise=(float)Simplex.noise2d(seed+i*31,3,0.65f,1.8f,Mathf.cos(ang)*3.5f,Mathf.sin(ang)*3.5f);
-            float warpR=R*(1f+rayNoise*0.28f*floatspikiness+nDetail*0.12f);
+            float warpR=R*(1f+rayNoise*0.28f*spikiness+nDetail*0.12f);
             if(dst>warpR)continue;
             float norm=dst/warpR;
             in.floor=craterFloor;
             in.block=Blocks.air;
-            float coreLimit=0.36f+rayNoise*0.22f*floatspikiness;
+            float coreLimit=0.36f+rayNoise*0.22f*spikiness;
             if(norm<coreLimit){
                 in.floor=(norm<coreLimit*0.55f&&nFine>0.08f)?meltFloor:coreFloor;
                 if(nFine>-0.1f&&norm<coreLimit*0.85f){
