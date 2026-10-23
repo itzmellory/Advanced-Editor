@@ -5,7 +5,6 @@ import arc.scene.*;
 import arc.scene.ui.*;
 import arc.scene.ui.layout.*;
 import arc.struct.*;
-import arc.util.*;
 import mindustry.*;
 import mindustry.editor.*;
 import mindustry.game.EventType.*;
@@ -14,21 +13,17 @@ import mindustry.maps.*;
 import mindustry.maps.filters.*;
 import mindustry.ui.*;
 import mindustry.ui.dialogs.*;
-import advancedredactor.generation.*;
 import java.lang.reflect.*;
 public class GeneratorUI{
-    private static final Seq<Prov<GenerateFilter>> col1Filters=new Seq<>();
-    private static final Seq<Prov<GenerateFilter>> col2Filters=new Seq<>();
+    private static final Seq<Prov<GenerateFilter>> modFilters=new Seq<>();
     public static void init(){
         setupFilterLists();
         registerIntoVanillaArray();
-        Events.run(Trigger.update,GeneratorUI::injectDialogColumns);
+        Events.run(Trigger.update,GeneratorUI::injectDialogColumn);
     }
-    @SuppressWarnings("unchecked")
     private static void setupFilterLists(){
-        col1Filters.clear();
-        col2Filters.clear();
-        String[] knownCol1={
+        modFilters.clear();
+        String[] knownFilters={
             "AdvancedTerrainFilter",
             "CaveGeneratorFilter",
             "CliffGeneratorFilter",
@@ -38,11 +33,11 @@ public class GeneratorUI{
             "IslandFilter",
             "RiverGeneratorFilter"
         };
-        for(String clsName:knownCol1){
+        for(String clsName:knownFilters){
             try{
                 Class<?> cls=Class.forName("advancedredactor.generation."+clsName);
                 if(GenerateFilter.class.isAssignableFrom(cls)){
-                    col1Filters.add(()->{
+                    modFilters.add(()->{
                         try{
                             return(GenerateFilter)cls.getDeclaredConstructor().newInstance();
                         }catch(Exception e){
@@ -52,8 +47,6 @@ public class GeneratorUI{
                 }
             }catch(Throwable ignored){}
         }
-        col2Filters.add(MeteorImpactFilter::new);
-        col2Filters.add(RichOreClusterFilter::new);
     }
     @SuppressWarnings("unchecked")
     private static void registerIntoVanillaArray(){
@@ -64,8 +57,7 @@ public class GeneratorUI{
             if(val instanceof Prov[]){
                 Prov<GenerateFilter>[] orig=(Prov<GenerateFilter>[])val;
                 Seq<Prov<GenerateFilter>> combined=Seq.with(orig);
-                for(Prov<GenerateFilter> p:col1Filters)combined.add(p);
-                for(Prov<GenerateFilter> p:col2Filters)combined.add(p);
+                for(Prov<GenerateFilter> p:modFilters)combined.add(p);
                 try{
                     Field modField=Field.class.getDeclaredField("modifiers");
                     modField.setAccessible(true);
@@ -80,7 +72,7 @@ public class GeneratorUI{
             }
         }catch(Throwable ignored){}
     }
-    private static void injectDialogColumns(){
+    private static void injectDialogColumn(){
         if(Vars.ui==null||Core.scene==null)return;
         for(Element el:Core.scene.root.getChildren()){
             if(el instanceof BaseDialog){
@@ -88,7 +80,7 @@ public class GeneratorUI{
                 if(bd.isShown()&&!"ar-gen-patched".equals(bd.name)){
                     if(isFilterSelectionDialog(bd)){
                         bd.name="ar-gen-patched";
-                        buildColumns(bd);
+                        buildColumn(bd);
                     }
                 }
             }
@@ -105,18 +97,14 @@ public class GeneratorUI{
         }
         return false;
     }
-    private static void buildColumns(BaseDialog addDialog){
+    private static void buildColumn(BaseDialog addDialog){
         try{
-            if(col1Filters.size>0){
-                Table col1=createColumnTable("[accent]Advanced Terrain[]",col1Filters,addDialog);
-                addDialog.cont.add(col1).top().padLeft(8f).fillY();
+            if(modFilters.size>0){
+                Table col=createColumnTable("[accent]Advanced Terrain[]",modFilters,addDialog);
+                addDialog.cont.add(col).top().padLeft(8f).fillY();
+                addDialog.cont.invalidateHierarchy();
+                addDialog.pack();
             }
-            if(col2Filters.size>0){
-                Table col2=createColumnTable("[accent]Special Generators[]",col2Filters,addDialog);
-                addDialog.cont.add(col2).top().padLeft(8f).fillY();
-            }
-            addDialog.cont.invalidateHierarchy();
-            addDialog.pack();
         }catch(Throwable ignored){}
     }
     private static Table createColumnTable(String title,Seq<Prov<GenerateFilter>> filters,BaseDialog addDialog){
