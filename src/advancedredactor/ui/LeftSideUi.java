@@ -11,6 +11,7 @@ import arc.scene.ui.TextField;
 import arc.scene.ui.layout.Stack;
 import arc.scene.ui.layout.Table;
 import arc.struct.ObjectSet;
+import arc.struct.Seq;
 import arc.util.Strings;
 import mindustry.Vars;
 import mindustry.editor.MapEditor;
@@ -62,10 +63,13 @@ injectLeftControls(e);
 
 private static void rebuildBrushBox(Table parent, Stack stack, Slider slider) {
 try {
-Element[] saved = parent.getChildren().toArray(Element.class);
+Seq<Element> saved = new Seq();
+for(Element e : parent.getChildren()) {
+saved.add(e);
+}
 parent.clearChildren();
-for (int i = 0; i < saved.length; ++i) {
-Element el = saved[i];
+for(int i = 0; i < saved.size; ++i) {
+Element el = (Element)saved.get(i);
 if (el == stack) {
 parent.add(el).growX().padTop(4.0F).row();
 Table inputBox = new Table();
@@ -75,7 +79,7 @@ TextField field = new TextField(Strings.fixed(Vars.editor.brushSize, 1));
 field.setFilter((f, c) -> Character.isDigit(c) || c == '.');
 field.changed(() -> {
 float val = Strings.parseFloat(field.getText(), -1.0F);
-if (val >= 0.5F && val <= 500.0F) {
+if (val >= 1F && val <= 500.0F) {
 Vars.editor.brushSize = val;
 }
 });
@@ -101,9 +105,9 @@ Table utils = new Table();
 utils.defaults().growX().height(40.0F).padTop(3.0F).padBottom(3.0F);
 utils.button(Core.bundle.get("editor.stencil.btn", "Stencil"), Icon.imageSmall, Styles.flatt, StencilManager::showDialog).row();
 utils.button(Core.bundle.get("editor.mapart.btn", "Pixel Art"), Icon.terrain, Styles.flatt, MapArtDialog::show).row();
-Table wrapper = new Table();
-wrapper.add(utils).growX().top();
-mid.add(wrapper).growX().row();
+Table scroll = new Table();
+scroll.add(utils).growX().top();
+mid.add(scroll).growX().maxHeight(Core.graphics.getHeight() * 0.25F).row();
 } catch (Exception var2) {
 }
 }
