@@ -1,95 +1,96 @@
 package advancedredactor.ui;
+import advancedredactor.LeftSideUtils.*;
 import arc.*;
 import arc.scene.*;
 import arc.scene.ui.*;
 import arc.scene.ui.layout.*;
 import arc.struct.*;
-import arc.util.*;
 import mindustry.*;
 import mindustry.editor.*;
 import mindustry.game.EventType.*;
 import mindustry.gen.*;
 import mindustry.ui.*;
-import advancedredactor.LeftSideUtils.*;
 public class LeftSideUi{
-    private static final ObjectSet<Table> hookedBrushTables=new ObjectSet<>();
-    private static final ObjectSet<Table> hookedMidTables=new ObjectSet<>();
     public static void init(){
+        StencilManager.init();
         Events.run(Trigger.update,()->{
-            if(Vars.ui==null||Vars.ui.editor==null)return;
-            if(!Vars.ui.editor.isShown()){
-                hookedBrushTables.clear();
-                hookedMidTables.clear();
-                return;
+            if(Vars.ui!=null&&Vars.ui.editor!=null&&Vars.ui.editor.isShown()){
+                FogOfWarManager.attachOverlay();
+                injectButtons(Vars.ui.editor);
             }
-            injectLeftControls(Vars.ui.editor);
         });
     }
-    private static void injectLeftControls(Element root){
-        if(root instanceof Slider){
-            Slider sl=(Slider)root;
-            if(Math.abs(sl.getMaxValue()-(MapEditor.brushSizes.length-1))<0.1f){
-                if(sl.parent instanceof Stack&&sl.parent.parent instanceof Table){
-                    Table brushTable=(Table)sl.parent.parent;
-                    if(!hookedBrushTables.contains(brushTable)){
-                        hookedBrushTables.add(brushTable);
-                        rebuildBrushBox(brushTable,(Stack)sl.parent,sl);
-                    }
-                    if(brushTable.parent instanceof Table){
-                        Table midTable=(Table)brushTable.parent;
-                        if(!hookedMidTables.contains(midTable)){
-                            hookedMidTables.add(midTable);
-                            appendBottomUtils(midTable);
+    private static void injectButtons(MapEditorDialog dialog){
+        Table target=findCheckboxContainer(dialog);
+        if(target==null)return;
+        if(target.find("ar-stencil-btn")!=null)return;
+        target.row();
+        Button stencilBtn=target.button(b->{
+            b.left();
+            b.image(Icon.pasteSmall).size(20f).padRight(6f);
+            b.add(Core.bundle.get("ar.stencil.button","Stencil")).growX().left();
+        },Styles.flatt,StencilManager::showDialog).growX().height(34f).padTop(2f).get();
+        stencilBtn.name="ar-stencil-btn";
+        target.row();
+        Button artBtn=target.button(b->{
+            b.left();
+            b.image(Icon.imageSmall).size(20f).padRight(6f);
+            b.add(Core.bundle.get("ar.art.button","Map Art")).growX().left();
+        },Styles.flatt,()->new MapArtDialog().show()).growX().height(34f).padTop(2f).get();
+        artBtn.name="ar-art-btn";
+        target.row();
+        Button fogBtn=target.button(b->{
+            b.left();
+            b.image(Icon.eyeSmall).size(20f).padRight(6f);
+            b.add(Core.bundle.get("ar.fog.button","Fog of War")).growX().left();
+        },Styles.flatt,FogOfWarManager::showDialog).growX().height(34f).padTop(2f).get();
+        fogBtn.name="ar-fog-btn";
+        wrapLeftPanelScroll(dialog,target);
+    }
+    private static void wrapLeftPanelScroll(MapEditorDialog dialog,Table target){
+        try{
+            Element curr=target;
+            Table leftColumn=null;
+            while(curr!=null&&curr!=dialog){
+                if(curr.parent instanceof Table&&curr.parent.getChildren().contains(dialog.getView(),true)){
+                    if(curr instanceof Table)leftColumn=(Table)curr;
+                    break;
+                }
+                curr=curr.parent;
+            }
+            if(leftColumn!=null&&!"ar-scroll-wrapped".equals(leftColumn.name)){
+                leftColumn.name="ar-scroll-wrapped";
+                Group parent=leftColumn.parent;
+                if(parent instanceof Table){
+                    Table pt=(Table)parent;
+                    SnapshotSeq<Element> seq=new SnapshotSeq<>(pt.getChildren());
+                    pt.clearChildren();
+                    for(Element el:seq){
+                        if(el==leftColumn){
+                            ScrollPane sp=new ScrollPane(leftColumn,Styles.noBarPane);
+                            sp.setScrollingDisabled(true,false);
+                            sp.setOverscroll(false,false);
+                            pt.add(sp).growY().top().left();
+                        }else if(el==dialog.getView()){
+                            pt.add(el).grow();
+                        }else{
+                            pt.add(el).growY();
                         }
                     }
                 }
             }
-        }
-        if(root instanceof Group){
-            for(Element e:((Group)root).getChildren()){
-                injectLeftControls(e);
+        }catch(Throwable ignored){}
+    }
+    private static Table findCheckboxContainer(Group root){
+        for(Element e:root.getChildren()){
+            if(e instanceof CheckBox){
+                if(e.parent instanceof Table)return (Table)e.parent;
+            }
+            if(e instanceof Group){
+                Table found=findCheckboxContainer((Group)e);
+                if(found!=null)return found;
             }
         }
-    }
-    private static void rebuildBrushBox(Table parent,Stack stack,Slider slider){
-        try{
-            Seq<Element> saved=new Seq<>();
-            for(Element e:parent.getChildren())saved.add(e);
-            parent.clearChildren();
-            for(int i=0;i<saved.size;i++){
-                Element el=saved.get(i);
-                if(el==stack){
-                    parent.add(el).growX().padTop(4f).row();
-                    Table inputBox=new Table();
-                    inputBox.left();
-                    inputBox.add(Core.bundle.get("editor.brushsize.input","Brush:")).style(Styles.outlineLabel).padRight(4f);
-                    TextField field=new TextField(Strings.fixed(Vars.editor.brushSize,1));
-                    field.setFilter((f,c)->Character.isDigit(c)||c=='.');
-                    field.changed(()->{
-                        float val=Strings.parseFloat(field.getText(),-1f);
-                        if(val>=0.5f&&val<=500f)Vars.editor.brushSize=val;
-                    });
-                    slider.moved(v->{
-                        int idx=Math.max(0,Math.min(MapEditor.brushSizes.length-1,(int)v));
-                        Vars.editor.brushSize=MapEditor.brushSizes[idx];
-                        field.setText(Strings.fixed(Vars.editor.brushSize,1));
-                    });
-                    inputBox.add(field).width(80f).height(32f);
-                    parent.add(inputBox).growX().padTop(4f).padBottom(6f).row();
-                }else{
-                    parent.add(el).growX().row();
-                }
-            }
-        }catch(Exception ignored){}
-    }
-    private static void appendBottomUtils(Table mid){
-        try{
-            mid.row();
-            Table utils=new Table();
-            utils.defaults().growX().height(40f).padTop(3f).padBottom(3f);
-            utils.button(Core.bundle.get("editor.stencil.btn","Stencil"),Icon.imageSmall,Styles.flatt,StencilManager::showDialog).row();
-            utils.button(Core.bundle.get("editor.mapart.btn","Pixel Art"),Icon.terrain,Styles.flatt,MapArtDialog::show).row();
-            mid.add(utils).growX().padTop(4f).row();
-        }catch(Exception ignored){}
+        return null;
     }
 }
