@@ -68,7 +68,7 @@ for(Element e : parent.getChildren()) {
 saved.add(e);
 }
 parent.clearChildren();
-for(int i = 0; i < saved.size; ++i) {
+for(int i = 0; i < saved.size(); ++i) {
 Element el = (Element)saved.get(i);
 if (el == stack) {
 parent.add(el).growX().padTop(4.0F).row();
@@ -105,9 +105,9 @@ Table utils = new Table();
 utils.defaults().growX().height(40.0F).padTop(3.0F).padBottom(3.0F);
 utils.button(Core.bundle.get("editor.stencil.btn", "Stencil"), Icon.imageSmall, Styles.flatt, StencilManager::showDialog).row();
 utils.button(Core.bundle.get("editor.mapart.btn", "Pixel Art"), Icon.terrain, Styles.flatt, MapArtDialog::show).row();
-Table scroll = new Table();
-scroll.add(utils).growX().top();
-mid.add(scroll).growX().maxHeight(Core.graphics.getHeight() * 0.5F).row();
+Table wrapper = new Table();
+wrapper.add(utils).growX().top();
+mid.add(wrapper).growX().row();
 } catch (Exception var2) {
 }
 }
