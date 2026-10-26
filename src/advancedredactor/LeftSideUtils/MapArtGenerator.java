@@ -94,7 +94,6 @@ public class MapArtGenerator{
             }
         }
         Vars.editor.renderer.updateAll();
-        FogOfWarManager.rebuild();
     }
     private static Floor findClosestFloor(Color c){
         Floor best=null;
