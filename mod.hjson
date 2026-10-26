@@ -1,9 +1,9 @@
 name: "advanced-redactor"
-displayName: "[[]#ffffff] Adv[[]][[]#e3e3e3]anced[[]] [[]#c7c7c7]Red[[]][[]#ababab]act[[]][[]#8f8f8f]or [[]]"
+displayName: "[[]#ffffff] Adv[[]][[]#e3e3e3]anced[[]] [[]#c7c7c7]Edi[[]][[]#ababab]tor[[]][[]#8f8f8f] [[]]"
 subtitle: "[[]#ffffff]⚠ Created by VI[[]] [[]#c7c7c7]Clan [[]]"
 author: "[[]#ffffff]⚠ X-Tree[[]] [[]#c7c7c7]and[[]] [[]#8f8f8f]VI Clan [[]]"
 main: "advancedredactor.AdvancedRedactorMod"
-repo: "itzmellory/Advanced-Redactor"
+repo: "itzmellory/Advanced-Editor"
 version: "1.0"
 minGameVersion: "160"
 java: true
