@@ -1,15 +1,11 @@
-/* Decompiler 273ms, total 748ms, lines 217 */
 package advancedredactor.LeftSideUtils;
 
-import advancedredactor.LeftSideUtils.MapArtDialog.ArtStyle;
-import advancedredactor.LeftSideUtils.MapArtDialog.LayerMode;
 import arc.files.Fi;
 import arc.graphics.Color;
 import arc.graphics.Pixmap;
 import arc.struct.ObjectSet;
 import arc.struct.Seq;
 import java.lang.reflect.Field;
-import java.util.Iterator;
 import mindustry.Vars;
 import mindustry.content.Blocks;
 import mindustry.world.Block;
@@ -17,7 +13,7 @@ import mindustry.world.Tile;
 import mindustry.world.blocks.environment.Floor;
 
 public class MapArtGenerator {
-   public static void generate(Fi file, int targetW, int targetH, ArtStyle style, LayerMode layerMode, boolean useAll, ObjectSet<Block> allowed) {
+   public static void generate(Fi file, int targetW, int targetH, MapArtDialog.ArtStyle style, MapArtDialog.LayerMode layerMode, boolean useAll, ObjectSet<Block> allowed) {
       try {
          Pixmap raw = new Pixmap(file);
          int w = Math.max(1, targetW);
@@ -28,7 +24,7 @@ public class MapArtGenerator {
             Vars.editor.resize(w, h, 0, 0);
          }
 
-         if (style == ArtStyle.colored) {
+         if (style == MapArtDialog.ArtStyle.colored) {
             applyColoredArt(img, w, h, layerMode);
          } else {
             applyTerrainArt(img, w, h, layerMode, useAll, allowed);
@@ -36,8 +32,8 @@ public class MapArtGenerator {
 
          img.dispose();
          Vars.editor.clearOp();
-      } catch (Exception var11) {
-         Vars.ui.showException("@editor.errorload", var11);
+      } catch (Exception e) {
+         Vars.ui.showException("@editor.errorload", e);
       }
 
    }
@@ -57,7 +53,7 @@ public class MapArtGenerator {
 
    }
 
-   private static void applyColoredArt(Pixmap img, int w, int h, LayerMode mode) {
+   private static void applyColoredArt(Pixmap img, int w, int h, MapArtDialog.LayerMode mode) {
       Block cFloorRaw = Vars.content.block("colored-floor");
       Block cWallRaw = Vars.content.block("colored-wall");
       Block cFloor = cFloorRaw == null ? Blocks.stone : cFloorRaw;
@@ -83,13 +79,13 @@ public class MapArtGenerator {
 
                   int extra = r << 24 | g << 16 | b << 8 | 1;
                   t.setOverlay(Blocks.air);
-                  if (mode == LayerMode.floorOnly) {
+                  if (mode == MapArtDialog.LayerMode.floorOnly) {
                      if (cFloor instanceof Floor) {
                         t.setFloor((Floor)cFloor);
                      }
 
                      t.setBlock(Blocks.air);
-                  } else if (mode == LayerMode.wallOnly) {
+                  } else if (mode == MapArtDialog.LayerMode.wallOnly) {
                      t.setBlock(a > 32 ? cWall : Blocks.air);
                   } else {
                      if (cFloor instanceof Floor) {
@@ -108,65 +104,12 @@ public class MapArtGenerator {
       });
    }
 
-   private static void applyTerrainArt(Pixmap img, int w, int h, LayerMode mode, boolean useAll, ObjectSet<Block> allowed) {
+   private static void applyTerrainArt(Pixmap img, int w, int h, MapArtDialog.LayerMode mode, boolean useAll, ObjectSet<Block> allowed) {
       Seq<Floor> floors = new Seq();
       Seq<Block> walls = new Seq();
-      Iterator var8 = Vars.content.blocks().iterator();
 
-      while(true) {
-         while(true) {
-            Block b;
-            do {
-               do {
-                  if (!var8.hasNext()) {
-                     if (floors.isEmpty()) {
-                        floors.add((Floor)Blocks.stone);
-                     }
-
-                     if (walls.isEmpty()) {
-                        walls.add(Blocks.stoneWall);
-                     }
-
-                     Vars.editor.load(() -> {
-                        for(int ty = 0; ty < h; ++ty) {
-                           int sy = h - 1 - ty;
-
-                           for(int x = 0; x < w; ++x) {
-                              Tile t = Vars.editor.tile(x, ty);
-                              if (t != null) {
-                                 int rgba = img.getRaw(x, sy);
-                                 int r = rgba >>> 24 & 255;
-                                 int g = rgba >>> 16 & 255;
-                                 int b = rgba >>> 8 & 255;
-                                 int a = rgba & 255;
-                                 t.setOverlay(Blocks.air);
-                                 if (a < 25) {
-                                    t.setBlock(Blocks.air);
-                                 } else if (mode == LayerMode.floorOnly) {
-                                    t.setFloor(bestFloor(floors, r, g, b));
-                                    t.setBlock(Blocks.air);
-                                 } else if (mode == LayerMode.wallOnly) {
-                                    t.setBlock(bestBlock(walls, r, g, b));
-                                 } else {
-                                    Floor bf = bestFloor(floors, r, g, b);
-                                    Block bw = bestBlock(walls, r, g, b);
-                                    float df = colorDist(bf.mapColor, r, g, b);
-                                    float dw = colorDist(bw.mapColor, r, g, b);
-                                    t.setFloor(bf);
-                                    t.setBlock(dw < df * 0.92F ? bw : Blocks.air);
-                                 }
-                              }
-                           }
-                        }
-
-                     });
-                     return;
-                  }
-
-                  b = (Block)var8.next();
-               } while(!MapArtDialog.isEligibleTerrainBlock(b));
-            } while(!useAll && !allowed.contains(b));
-
+      for(Block b : Vars.content.blocks()) {
+         if (MapArtDialog.isEligibleTerrainBlock(b) && (useAll || allowed.contains(b))) {
             if (b.isFloor() && b instanceof Floor) {
                floors.add((Floor)b);
             } else if (!b.isFloor() && b.isStatic()) {
@@ -174,6 +117,48 @@ public class MapArtGenerator {
             }
          }
       }
+
+      if (floors.isEmpty()) {
+         floors.add((Floor)Blocks.stone);
+      }
+
+      if (walls.isEmpty()) {
+         walls.add(Blocks.stoneWall);
+      }
+
+      Vars.editor.load(() -> {
+         for(int ty = 0; ty < h; ++ty) {
+            int sy = h - 1 - ty;
+
+            for(int x = 0; x < w; ++x) {
+               Tile t = Vars.editor.tile(x, ty);
+               if (t != null) {
+                  int rgba = img.getRaw(x, sy);
+                  int r = rgba >>> 24 & 255;
+                  int g = rgba >>> 16 & 255;
+                  int b = rgba >>> 8 & 255;
+                  int a = rgba & 255;
+                  t.setOverlay(Blocks.air);
+                  if (a < 25) {
+                     t.setBlock(Blocks.air);
+                  } else if (mode == MapArtDialog.LayerMode.floorOnly) {
+                     t.setFloor(bestFloor(floors, r, g, b));
+                     t.setBlock(Blocks.air);
+                  } else if (mode == MapArtDialog.LayerMode.wallOnly) {
+                     t.setBlock(bestBlock(walls, r, g, b));
+                  } else {
+                     Floor bf = bestFloor(floors, r, g, b);
+                     Block bw = bestBlock(walls, r, g, b);
+                     float df = colorDist(bf.mapColor, r, g, b);
+                     float dw = colorDist(bw.mapColor, r, g, b);
+                     t.setFloor(bf);
+                     t.setBlock(dw < df * 0.92F ? bw : Blocks.air);
+                  }
+               }
+            }
+         }
+
+      });
    }
 
    private static Floor bestFloor(Seq<Floor> list, int r, int g, int b) {
