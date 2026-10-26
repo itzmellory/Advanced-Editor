@@ -1,4 +1,3 @@
-/* Decompiler 478ms, total 1544ms, lines 425 */
 package advancedredactor.LeftSideUtils;
 
 import arc.Core;
@@ -18,11 +17,9 @@ import arc.scene.ui.layout.Stack;
 import arc.scene.ui.layout.Table;
 import arc.struct.ObjectSet;
 import arc.struct.Seq;
-import arc.struct.ObjectSet.ObjectSetIterator;
 import arc.util.Scaling;
 import arc.util.Strings;
 import java.lang.reflect.Method;
-import java.util.Iterator;
 import mindustry.Vars;
 import mindustry.content.Blocks;
 import mindustry.core.Platform;
@@ -39,8 +36,8 @@ public class MapArtDialog {
    public static Fi selectedFile;
    public static Texture previewTexture;
    public static TextureRegion previewRegion;
-   public static MapArtDialog.ArtStyle style;
-   public static MapArtDialog.LayerMode layerMode;
+   public static ArtStyle style;
+   public static LayerMode layerMode;
    public static boolean useAllBlocks;
    public static final ObjectSet<Block> allowedBlocks;
    private static boolean initializedDefaults;
@@ -66,18 +63,12 @@ public class MapArtDialog {
          }
 
          main.add(Core.bundle.get("editor.mapart.width", "Width (1-3000):"));
-         main.field(String.valueOf(artWidth), TextFieldFilter.digitsOnly, (s) -> {
-            artWidth = Math.max(1, Math.min(3000, Strings.parseInt(s, artWidth)));
-         }).width(150.0F).row();
+         main.field(String.valueOf(artWidth), TextFieldFilter.digitsOnly, (s) -> artWidth = Math.max(1, Math.min(3000, Strings.parseInt(s, artWidth)))).width(150.0F).row();
          main.add(Core.bundle.get("editor.mapart.height", "Height (1-3000):"));
-         main.field(String.valueOf(artHeight), TextFieldFilter.digitsOnly, (s) -> {
-            artHeight = Math.max(1, Math.min(3000, Strings.parseInt(s, artHeight)));
-         }).width(150.0F).row();
+         main.field(String.valueOf(artHeight), TextFieldFilter.digitsOnly, (s) -> artHeight = Math.max(1, Math.min(3000, Strings.parseInt(s, artHeight)))).width(150.0F).row();
          Label fileLabel = new Label(selectedFile == null ? Core.bundle.get("editor.mapart.nofile", "No PNG selected") : selectedFile.name());
          fileLabel.setColor(selectedFile == null ? Color.lightGray : Color.lime);
-         main.button(Core.bundle.get("editor.mapart.selectpng", "Choose PNG..."), Icon.fileImage, Styles.flatt, () -> {
-            pickPNG((file) -> {
-               Core.app.post(() -> {
+         main.button(Core.bundle.get("editor.mapart.selectpng", "Choose PNG..."), Icon.fileImage, Styles.flatt, () -> pickPNG((file) -> Core.app.post(() -> {
                   selectedFile = file;
 
                   try {
@@ -95,9 +86,7 @@ public class MapArtDialog {
                   }
 
                   rebuild[0].run();
-               });
-            });
-         }).colspan(2).growX().height(42.0F).row();
+               }))).colspan(2).growX().height(42.0F).row();
          main.add(fileLabel).colspan(2).left().padBottom(6.0F).row();
          main.add(Core.bundle.get("editor.mapart.type", "Generation Type:")).left();
          main.button(style == MapArtDialog.ArtStyle.colored ? Core.bundle.get("editor.mapart.type.colored", "Colored Blocks") : Core.bundle.get("editor.mapart.type.terrain", "Vanilla Terrain"), Styles.flatt, () -> {
@@ -106,7 +95,7 @@ public class MapArtDialog {
          }).width(190.0F).height(36.0F).row();
          main.add(Core.bundle.get("editor.mapart.layers", "Layer Mode:")).left();
          main.button(getLayerModeName(layerMode), Styles.flatt, () -> {
-            MapArtDialog.LayerMode[] vals = MapArtDialog.LayerMode.values();
+            LayerMode[] vals = MapArtDialog.LayerMode.values();
             layerMode = vals[(layerMode.ordinal() + 1) % vals.length];
             rebuild[0].run();
          }).width(190.0F).height(36.0F).row();
@@ -117,9 +106,7 @@ public class MapArtDialog {
                rebuild[0].run();
             }).width(190.0F).height(36.0F).row();
             if (!useAllBlocks) {
-               main.button(Core.bundle.get("editor.mapart.selectblocks", "Select Allowed Blocks") + " (" + allowedBlocks.size + ")", Icon.edit, Styles.flatt, () -> {
-                  showBlockFilterDialog(rebuild[0]);
-               }).colspan(2).growX().height(40.0F).row();
+               main.button(Core.bundle.get("editor.mapart.selectblocks", "Select Allowed Blocks") + " (" + allowedBlocks.size + ")", Icon.edit, Styles.flatt, () -> showBlockFilterDialog(rebuild[0])).colspan(2).growX().height(40.0F).row();
             }
          }
 
@@ -130,9 +117,7 @@ public class MapArtDialog {
                Vars.ui.showErrorMessage("Select at least 1 allowed block!");
             } else {
                d.hide();
-               Vars.ui.loadAnd(() -> {
-                  MapArtGenerator.generate(selectedFile, artWidth, artHeight, style, layerMode, useAllBlocks, allowedBlocks);
-               });
+               Vars.ui.loadAnd(() -> MapArtGenerator.generate(selectedFile, artWidth, artHeight, style, layerMode, useAllBlocks, allowedBlocks));
             }
          }).colspan(2).growX().height(46.0F).padTop(10.0F).row();
       };
@@ -144,7 +129,7 @@ public class MapArtDialog {
 
    private static void pickPNG(Cons<Fi> cons) {
       try {
-         Class fc = null;
+         Class<?> fc = null;
 
          try {
             fc = Class.forName("mindustry.ui.FileChooser");
@@ -156,12 +141,8 @@ public class MapArtDialog {
          }
 
          Method op = null;
-         Method[] var3 = fc.getMethods();
-         int var4 = var3.length;
 
-         int var5;
-         for(var5 = 0; var5 < var4; ++var5) {
-            Method m = var3[var5];
+         for(Method m : fc.getMethods()) {
             if (m.getName().equals("open")) {
                op = m;
                break;
@@ -170,11 +151,8 @@ public class MapArtDialog {
 
          if (op != null) {
             Object fci = op.getParameterTypes()[0] == String.class ? op.invoke((Object)null, "png") : op.invoke((Object)null, new String[]{"png"});
-            Method[] var15 = fci.getClass().getMethods();
-            var5 = var15.length;
 
-            for(int var17 = 0; var17 < var5; ++var17) {
-               Method m = var15[var17];
+            for(Method m : fci.getClass().getMethods()) {
                if (m.getName().equals("submit")) {
                   m.invoke(fci, cons);
                   return;
@@ -185,11 +163,7 @@ public class MapArtDialog {
       }
 
       try {
-         Method[] var11 = Platform.class.getMethods();
-         int var12 = var11.length;
-
-         for(int var14 = 0; var14 < var12; ++var14) {
-            Method m = var11[var14];
+         for(Method m : Platform.class.getMethods()) {
             if (m.getName().equals("showFileChooser")) {
                if (m.getParameterTypes().length == 3) {
                   m.invoke(Vars.platform, true, "png", cons);
@@ -207,23 +181,21 @@ public class MapArtDialog {
 
    }
 
-   private static String getLayerModeName(MapArtDialog.LayerMode m) {
-      switch(m) {
-      case floorOnly:
-         return Core.bundle.get("editor.mapart.layer.floor", "Floor Only");
-      case wallOnly:
-         return Core.bundle.get("editor.mapart.layer.wall", "Walls Only");
-      default:
-         return Core.bundle.get("editor.mapart.layer.both", "Floor + Walls");
+   private static String getLayerModeName(LayerMode m) {
+      switch (m) {
+         case floorOnly:
+            return Core.bundle.get("editor.mapart.layer.floor", "Floor Only");
+         case wallOnly:
+            return Core.bundle.get("editor.mapart.layer.wall", "Walls Only");
+         default:
+            return Core.bundle.get("editor.mapart.layer.both", "Floor + Walls");
       }
    }
 
    public static void initDefaultAllowedBlocks() {
       allowedBlocks.clear();
-      Iterator var0 = Vars.content.blocks().iterator();
 
-      while(var0.hasNext()) {
-         Block b = (Block)var0.next();
+      for(Block b : Vars.content.blocks()) {
          if (isEligibleTerrainBlock(b)) {
             allowedBlocks.add(b);
          }
@@ -251,62 +223,45 @@ public class MapArtDialog {
       String[] search = new String[]{""};
       int[] tab = new int[]{0};
       Label countLabel = new Label("");
-      Runnable updateCount = () -> {
-         countLabel.setText("Selected: [accent]" + allowedBlocks.size + "[] blocks");
-      };
+      Runnable updateCount = () -> countLabel.setText("Selected: [accent]" + allowedBlocks.size + "[] blocks");
       Runnable rebuildGrid = () -> {
          grid.clearChildren();
          updateCount.run();
          int cols = 0;
          String q = search[0].toLowerCase().trim();
-         Iterator var6 = Vars.content.blocks().iterator();
 
-         while(true) {
-            Block b;
-            do {
-               do {
-                  do {
-                     do {
-                        if (!var6.hasNext()) {
-                           return;
-                        }
+         for(Block b : Vars.content.blocks()) {
+            if (isEligibleTerrainBlock(b) && (tab[0] != 1 || b.isFloor()) && (tab[0] != 2 || !b.isFloor()) && (q.isEmpty() || b.localizedName.toLowerCase().contains(q) || b.name.toLowerCase().contains(q))) {
+               Button btn = new Button(Styles.flatTogglet);
+               boolean sel = allowedBlocks.contains(b);
+               btn.setChecked(sel);
+               Image iconImg = new Image(b.uiIcon);
+               iconImg.setScaling(Scaling.fit);
+               iconImg.setColor(sel ? Color.white : new Color(0.2F, 0.2F, 0.2F, 0.7F));
+               Label checkMark = new Label(() -> allowedBlocks.contains(b) ? "[lime]✔[]" : "");
+               checkMark.setAlignment(18);
+               Stack st = new Stack(new Element[]{iconImg, checkMark});
+               btn.add(st).size(34.0F);
+               btn.clicked(() -> {
+                  if (allowedBlocks.contains(b)) {
+                     allowedBlocks.remove(b);
+                  } else {
+                     allowedBlocks.add(b);
+                  }
 
-                        b = (Block)var6.next();
-                     } while(!isEligibleTerrainBlock(b));
-                  } while(tab[0] == 1 && !b.isFloor());
-               } while(tab[0] == 2 && b.isFloor());
-            } while(!q.isEmpty() && !b.localizedName.toLowerCase().contains(q) && !b.name.toLowerCase().contains(q));
-
-            Button btn = new Button(Styles.flatTogglet);
-            boolean sel = allowedBlocks.contains(b);
-            btn.setChecked(sel);
-            Image iconImg = new Image(b.uiIcon);
-            iconImg.setScaling(Scaling.fit);
-            iconImg.setColor(sel ? Color.white : new Color(0.2F, 0.2F, 0.2F, 0.7F));
-            Label checkMark = new Label(() -> {
-               return allowedBlocks.contains(b) ? "[lime]✔[]" : "";
-            });
-            checkMark.setAlignment(18);
-            Stack st = new Stack(new Element[]{iconImg, checkMark});
-            btn.add(st).size(34.0F);
-            btn.clicked(() -> {
-               if (allowedBlocks.contains(b)) {
-                  allowedBlocks.remove(b);
-               } else {
-                  allowedBlocks.add(b);
+                  boolean ns = allowedBlocks.contains(b);
+                  btn.setChecked(ns);
+                  iconImg.setColor(ns ? Color.white : new Color(0.2F, 0.2F, 0.2F, 0.7F));
+                  updateCount.run();
+               });
+               grid.add(btn).size(48.0F).pad(3.0F).tooltip(b.localizedName);
+               ++cols;
+               if (cols % 8 == 0) {
+                  grid.row();
                }
-
-               boolean ns = allowedBlocks.contains(b);
-               btn.setChecked(ns);
-               iconImg.setColor(ns ? Color.white : new Color(0.2F, 0.2F, 0.2F, 0.7F));
-               updateCount.run();
-            });
-            grid.add(btn).size(48.0F).pad(3.0F).tooltip(b.localizedName);
-            ++cols;
-            if (cols % 8 == 0) {
-               grid.row();
             }
          }
+
       };
       bd.cont.add(countLabel).padBottom(4.0F).row();
       bd.cont.table((tabs) -> {
@@ -314,55 +269,36 @@ public class MapArtDialog {
          tabs.button("All", Styles.flatTogglet, () -> {
             tab[0] = 0;
             rebuildGrid.run();
-         }).update((b) -> {
-            b.setChecked(tab[0] == 0);
-         });
+         }).update((b) -> b.setChecked(tab[0] == 0));
          tabs.button("Floors", Styles.flatTogglet, () -> {
             tab[0] = 1;
             rebuildGrid.run();
-         }).update((b) -> {
-            b.setChecked(tab[0] == 1);
-         });
+         }).update((b) -> b.setChecked(tab[0] == 1));
          tabs.button("Walls", Styles.flatTogglet, () -> {
             tab[0] = 2;
             rebuildGrid.run();
-         }).update((b) -> {
-            b.setChecked(tab[0] == 2);
-         });
+         }).update((b) -> b.setChecked(tab[0] == 2));
       }).row();
       bd.cont.table((top) -> {
          top.defaults().size(120.0F, 36.0F).pad(2.0F);
          top.button("Select All", Styles.flatt, () -> {
-            Iterator var2 = Vars.content.blocks().iterator();
-
-            while(true) {
-               Block b;
-               do {
-                  do {
-                     do {
-                        if (!var2.hasNext()) {
-                           rebuildGrid.run();
-                           return;
-                        }
-
-                        b = (Block)var2.next();
-                     } while(!isEligibleTerrainBlock(b));
-                  } while(tab[0] == 1 && !b.isFloor());
-               } while(tab[0] == 2 && b.isFloor());
-
-               allowedBlocks.add(b);
+            for(Block b : Vars.content.blocks()) {
+               if (isEligibleTerrainBlock(b) && (tab[0] != 1 || b.isFloor()) && (tab[0] != 2 || !b.isFloor())) {
+                  allowedBlocks.add(b);
+               }
             }
+
+            rebuildGrid.run();
          });
          top.button("Clear All", Styles.flatt, () -> {
             if (tab[0] == 0) {
                allowedBlocks.clear();
             } else {
                Seq<Block> rem = new Seq();
-               ObjectSetIterator var3 = allowedBlocks.iterator();
+               ObjectSet.ObjectSetIterator var3 = allowedBlocks.iterator();
 
-               Block b;
                while(var3.hasNext()) {
-                  b = (Block)var3.next();
+                  Block b = (Block)var3.next();
                   if (tab[0] == 1 && b.isFloor()) {
                      rem.add(b);
                   }
@@ -372,10 +308,7 @@ public class MapArtDialog {
                   }
                }
 
-               Iterator var5 = rem.iterator();
-
-               while(var5.hasNext()) {
-                  b = (Block)var5.next();
+               for(Block b : rem) {
                   allowedBlocks.remove(b);
                }
             }
@@ -402,24 +335,24 @@ public class MapArtDialog {
       initializedDefaults = false;
    }
 
+   public static enum ArtStyle {
+      colored,
+      terrain;
+
+      // $FF: synthetic method
+      private static ArtStyle[] $values() {
+         return new ArtStyle[]{colored, terrain};
+      }
+   }
+
    public static enum LayerMode {
       floorOnly,
       wallOnly,
       floorAndWall;
 
       // $FF: synthetic method
-      private static MapArtDialog.LayerMode[] $values() {
-         return new MapArtDialog.LayerMode[]{floorOnly, wallOnly, floorAndWall};
+      private static LayerMode[] $values() {
+         return new LayerMode[]{floorOnly, wallOnly, floorAndWall};
       }
    }
-
-   public static enum ArtStyle {
-      colored,
-      terrain;
-
-      // $FF: synthetic method
-      private static MapArtDialog.ArtStyle[] $values() {
-         return new MapArtDialog.ArtStyle[]{colored, terrain};
-      }
-   }
-                    }
+}
