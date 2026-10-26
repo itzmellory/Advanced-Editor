@@ -1,227 +1,425 @@
+/* Decompiler 478ms, total 1544ms, lines 425 */
 package advancedredactor.LeftSideUtils;
-import arc.*;
-import arc.files.*;
-import arc.graphics.*;
-import arc.util.Time;
-import arc.scene.ui.*;
-import arc.scene.ui.layout.*;
-import mindustry.*;
-import mindustry.gen.*;
-import mindustry.ui.*;
-import mindustry.ui.dialogs.*;
+
+import arc.Core;
+import arc.files.Fi;
+import arc.func.Cons;
+import arc.graphics.Color;
+import arc.graphics.Pixmap;
+import arc.graphics.Texture;
+import arc.graphics.g2d.TextureRegion;
+import arc.scene.Element;
+import arc.scene.style.TextureRegionDrawable;
+import arc.scene.ui.Button;
+import arc.scene.ui.Image;
+import arc.scene.ui.Label;
+import arc.scene.ui.TextField.TextFieldFilter;
+import arc.scene.ui.layout.Stack;
+import arc.scene.ui.layout.Table;
+import arc.struct.ObjectSet;
+import arc.struct.Seq;
+import arc.struct.ObjectSet.ObjectSetIterator;
+import arc.util.Scaling;
+import arc.util.Strings;
 import java.lang.reflect.Method;
+import java.util.Iterator;
+import mindustry.Vars;
+import mindustry.content.Blocks;
+import mindustry.core.Platform;
+import mindustry.gen.Icon;
+import mindustry.gen.Tex;
+import mindustry.ui.Styles;
+import mindustry.ui.dialogs.BaseDialog;
+import mindustry.world.Block;
+import mindustry.world.blocks.environment.Floor;
 
-public class MapArtDialog extends BaseDialog{
-    public enum ArtStyle{TERRAIN,SORTER,CANVAS}
-    public enum LayerMode{FLOORS_AND_WALLS,FLOORS_ONLY,WALLS_ONLY}
-    private Fi selectedFile;
-    private int origWidth=0,origHeight=0;
-    private int targetWidth=100,targetHeight=100;
-    private boolean keepAspect=true;
-    private boolean clearBlocks=true;
-    private ArtStyle style=ArtStyle.TERRAIN;
-    private LayerMode layerMode=LayerMode.FLOORS_AND_WALLS;
-    private Label fileLabel;
-    private TextField widthField,heightField;
-    private TextButton generateBtn,placeOnMapBtn;
-    private Table dynamicOptionsTable;
+public class MapArtDialog {
+   public static int artWidth = 200;
+   public static int artHeight = 200;
+   public static Fi selectedFile;
+   public static Texture previewTexture;
+   public static TextureRegion previewRegion;
+   public static MapArtDialog.ArtStyle style;
+   public static MapArtDialog.LayerMode layerMode;
+   public static boolean useAllBlocks;
+   public static final ObjectSet<Block> allowedBlocks;
+   private static boolean initializedDefaults;
 
-    public MapArtDialog(){
-        super(Core.bundle.get("ar.art.title","Map Art Generator"));
-        addCloseButton();
-        setupUI();
-    }
+   public static void show() {
+      if (!initializedDefaults) {
+         initDefaultAllowedBlocks();
+         initializedDefaults = true;
+      }
 
-    private void setupUI(){
-        cont.clear();
-        Table main=new Table();
-        main.defaults().pad(4f);
-        
-        Table fileTable=new Table(Tex.button);
-        fileLabel=new Label(Core.bundle.get("ar.art.nofile","No image selected"));
-        fileTable.add(fileLabel).padRight(10f);
-        fileTable.button(Core.bundle.get("ar.art.choose","Choose Image"),Icon.imageSmall,this::chooseImage).height(40f).padLeft(8f);
-        main.add(fileTable).growX().row();
-        
-        Table styleTable=new Table(Tex.button);
-        styleTable.add(Core.bundle.get("ar.art.style","Art Type:")).left().row();
-        ButtonGroup<TextButton> styleGroup=new ButtonGroup<>();
-        Table styleBtns=new Table();
-        styleBtns.defaults().growX().height(38f).pad(2f);
-        addStyleBtn(styleBtns,styleGroup,Core.bundle.get("ar.art.style.terrain","Terrain"),ArtStyle.TERRAIN);
-        addStyleBtn(styleBtns,styleGroup,Core.bundle.get("ar.art.style.sorter","Sorters"),ArtStyle.SORTER);
-        addStyleBtn(styleBtns,styleGroup,Core.bundle.get("ar.art.style.canvas","Canvas"),ArtStyle.CANVAS);
-        styleTable.add(styleBtns).growX();
-        main.add(styleTable).growX().row();
-        
-        Table sizeTable=new Table(Tex.button);
-        sizeTable.add(Core.bundle.get("ar.art.dimensions","Target Size (in tiles):")).colspan(4).left().padBottom(4f).row();
-        widthField=new TextField(String.valueOf(targetWidth));
-        heightField=new TextField(String.valueOf(targetHeight));
-        widthField.setFilter(TextField.TextFieldFilter.digitsOnly);
-        heightField.setFilter(TextField.TextFieldFilter.digitsOnly);
-        
-        widthField.changed(()->{
-            if(widthField.getText().isEmpty())return;
-            try{
-                targetWidth=Math.max(1,Integer.parseInt(widthField.getText()));
-                if(keepAspect&&origWidth>0&&origHeight>0){
-                    targetHeight=Math.max(1,Math.round(targetWidth*((float)origHeight/origWidth)));
-                    heightField.setText(String.valueOf(targetHeight));
-                }
-            }catch(NumberFormatException ignored){}
-        });
-        heightField.changed(()->{
-            if(heightField.getText().isEmpty())return;
-            try{
-                targetHeight=Math.max(1,Integer.parseInt(heightField.getText()));
-                if(keepAspect&&origWidth>0&&origHeight>0){
-                    targetWidth=Math.max(1,Math.round(targetHeight*((float)origWidth/origHeight)));
-                    widthField.setText(String.valueOf(targetWidth));
-                }
-            }catch(NumberFormatException ignored){}
-        });
-        
-        sizeTable.add(Core.bundle.get("ar.art.width","Width:")).right().padRight(4f);
-        sizeTable.add(widthField).width(90f).padRight(10f);
-        sizeTable.add(Core.bundle.get("ar.art.height","Height:")).right().padRight(4f);
-        sizeTable.add(heightField).width(90f).row();
-        
-        Table quickSizeBtns=new Table();
-        quickSizeBtns.defaults().height(34f).pad(2f).growX();
-        quickSizeBtns.button(Core.bundle.get("ar.art.fitmap","Fit to Map"),()->{
-            targetWidth=Vars.editor.width();
-            targetHeight=Vars.editor.height();
-            if(keepAspect&&origWidth>0&&origHeight>0){
-                float scale=Math.min((float)Vars.editor.width()/origWidth,(float)Vars.editor.height()/origHeight);
-                targetWidth=Math.max(1,Math.round(origWidth*scale));
-                targetHeight=Math.max(1,Math.round(origHeight*scale));
+      BaseDialog d = new BaseDialog(Core.bundle.get("editor.mapart.title", "Pixel Art Generator"));
+      Table main = new Table();
+      Runnable[] rebuild = new Runnable[1];
+      rebuild[0] = () -> {
+         main.clearChildren();
+         main.defaults().pad(4.0F).left();
+         if (previewRegion != null) {
+            Table prevBox = new Table(Tex.pane);
+            Image img = new Image(new TextureRegionDrawable(previewRegion));
+            img.setScaling(Scaling.fit);
+            prevBox.add(img).size(160.0F, 160.0F).pad(4.0F);
+            main.add(prevBox).colspan(2).center().padBottom(6.0F).row();
+         }
+
+         main.add(Core.bundle.get("editor.mapart.width", "Width (1-3000):"));
+         main.field(String.valueOf(artWidth), TextFieldFilter.digitsOnly, (s) -> {
+            artWidth = Math.max(1, Math.min(3000, Strings.parseInt(s, artWidth)));
+         }).width(150.0F).row();
+         main.add(Core.bundle.get("editor.mapart.height", "Height (1-3000):"));
+         main.field(String.valueOf(artHeight), TextFieldFilter.digitsOnly, (s) -> {
+            artHeight = Math.max(1, Math.min(3000, Strings.parseInt(s, artHeight)));
+         }).width(150.0F).row();
+         Label fileLabel = new Label(selectedFile == null ? Core.bundle.get("editor.mapart.nofile", "No PNG selected") : selectedFile.name());
+         fileLabel.setColor(selectedFile == null ? Color.lightGray : Color.lime);
+         main.button(Core.bundle.get("editor.mapart.selectpng", "Choose PNG..."), Icon.fileImage, Styles.flatt, () -> {
+            pickPNG((file) -> {
+               Core.app.post(() -> {
+                  selectedFile = file;
+
+                  try {
+                     Pixmap p = new Pixmap(file);
+                     artWidth = Math.min(800, p.width);
+                     artHeight = Math.min(800, p.height);
+                     if (previewTexture != null) {
+                        previewTexture.dispose();
+                     }
+
+                     previewTexture = new Texture(p);
+                     previewRegion = new TextureRegion(previewTexture);
+                     p.dispose();
+                  } catch (Exception var3) {
+                  }
+
+                  rebuild[0].run();
+               });
+            });
+         }).colspan(2).growX().height(42.0F).row();
+         main.add(fileLabel).colspan(2).left().padBottom(6.0F).row();
+         main.add(Core.bundle.get("editor.mapart.type", "Generation Type:")).left();
+         main.button(style == MapArtDialog.ArtStyle.colored ? Core.bundle.get("editor.mapart.type.colored", "Colored Blocks") : Core.bundle.get("editor.mapart.type.terrain", "Vanilla Terrain"), Styles.flatt, () -> {
+            style = style == MapArtDialog.ArtStyle.colored ? MapArtDialog.ArtStyle.terrain : MapArtDialog.ArtStyle.colored;
+            rebuild[0].run();
+         }).width(190.0F).height(36.0F).row();
+         main.add(Core.bundle.get("editor.mapart.layers", "Layer Mode:")).left();
+         main.button(getLayerModeName(layerMode), Styles.flatt, () -> {
+            MapArtDialog.LayerMode[] vals = MapArtDialog.LayerMode.values();
+            layerMode = vals[(layerMode.ordinal() + 1) % vals.length];
+            rebuild[0].run();
+         }).width(190.0F).height(36.0F).row();
+         if (style == MapArtDialog.ArtStyle.terrain) {
+            main.add(Core.bundle.get("editor.mapart.palette", "Block Palette:")).left();
+            main.button(useAllBlocks ? Core.bundle.get("editor.mapart.palette.all", "All Blocks") : Core.bundle.get("editor.mapart.palette.custom", "Selected Only"), Styles.flatt, () -> {
+               useAllBlocks = !useAllBlocks;
+               rebuild[0].run();
+            }).width(190.0F).height(36.0F).row();
+            if (!useAllBlocks) {
+               main.button(Core.bundle.get("editor.mapart.selectblocks", "Select Allowed Blocks") + " (" + allowedBlocks.size + ")", Icon.edit, Styles.flatt, () -> {
+                  showBlockFilterDialog(rebuild[0]);
+               }).colspan(2).growX().height(40.0F).row();
             }
-            widthField.setText(String.valueOf(targetWidth));
-            heightField.setText(String.valueOf(targetHeight));
-        });
-        quickSizeBtns.button(Core.bundle.get("ar.art.origsize","1:1 Original"),()->{
-            if(origWidth>0&&origHeight>0){
-                targetWidth=Math.min(origWidth,Vars.editor.width());
-                targetHeight=Math.min(origHeight,Vars.editor.height());
-                widthField.setText(String.valueOf(targetWidth));
-                heightField.setText(String.valueOf(targetHeight));
+         }
+
+         main.button(Core.bundle.get("editor.mapart.generate", "Generate Art on Map"), Icon.ok, Styles.flatt, () -> {
+            if (selectedFile == null) {
+               Vars.ui.showErrorMessage(Core.bundle.get("editor.mapart.needfile", "Please select a PNG file first!"));
+            } else if (style == MapArtDialog.ArtStyle.terrain && !useAllBlocks && allowedBlocks.isEmpty()) {
+               Vars.ui.showErrorMessage("Select at least 1 allowed block!");
+            } else {
+               d.hide();
+               Vars.ui.loadAnd(() -> {
+                  MapArtGenerator.generate(selectedFile, artWidth, artHeight, style, layerMode, useAllBlocks, allowedBlocks);
+               });
             }
-        });
-        sizeTable.add(quickSizeBtns).colspan(4).growX().padTop(4f).row();
-        sizeTable.check(Core.bundle.get("ar.art.keepaspect","Keep Aspect Ratio"),keepAspect,b->keepAspect=b).colspan(4).left().padTop(4f);
-        main.add(sizeTable).growX().row();
-        
-        dynamicOptionsTable=new Table(Tex.button);
-        rebuildDynamicOptions();
-        main.add(dynamicOptionsTable).growX().row();
-        
-        Table actions=new Table();
-        actions.defaults().growX().height(46f).pad(3f);
-        generateBtn=actions.button(Core.bundle.get("ar.art.generate","Generate Full/Centered"),Icon.ok,this::runGeneration).get();
-        placeOnMapBtn=actions.button(Core.bundle.get("ar.art.placemode","Place & Drag on Map"),Icon.move,this::runInteractivePlace).get();
-        generateBtn.setDisabled(()->selectedFile==null);
-        placeOnMapBtn.setDisabled(()->selectedFile==null);
-        main.add(actions).growX().padTop(6f);
-        
-        ScrollPane pane=new ScrollPane(main);
-        cont.add(pane).maxWidth(520f);
-    }
+         }).colspan(2).growX().height(46.0F).padTop(10.0F).row();
+      };
+      rebuild[0].run();
+      d.cont.pane(main).maxHeight((float)Core.graphics.getHeight() * 0.82F);
+      d.addCloseButton();
+      d.show();
+   }
 
-    private void addStyleBtn(Table parent,ButtonGroup<TextButton> group,String text,ArtStyle s){
-        TextButton btn=new TextButton(text,Styles.togglet);
-        btn.clicked(()->{
-            style=s;
-            rebuildDynamicOptions();
-        });
-        if(style==s)btn.setChecked(true);
-        group.add(btn);
-        parent.add(btn);
-    }
+   private static void pickPNG(Cons<Fi> cons) {
+      try {
+         Class fc = null;
 
-    private void rebuildDynamicOptions(){
-        dynamicOptionsTable.clear();
-        dynamicOptionsTable.defaults().left().pad(2f);
-        if(style==ArtStyle.TERRAIN){
-            dynamicOptionsTable.add(Core.bundle.get("ar.art.layers","Blocks to use:")).row();
-            ButtonGroup<CheckBox> grp=new ButtonGroup<>();
-            addLayerCheck(dynamicOptionsTable,grp,Core.bundle.get("ar.art.layer.both","Floors + Walls (Best Colors)"),LayerMode.FLOORS_AND_WALLS);
-            addLayerCheck(dynamicOptionsTable,grp,Core.bundle.get("ar.art.layer.floors","Floors Only (Walkable)"),LayerMode.FLOORS_ONLY);
-            addLayerCheck(dynamicOptionsTable,grp,Core.bundle.get("ar.art.layer.walls","Walls Only"),LayerMode.WALLS_ONLY);
-            dynamicOptionsTable.check(Core.bundle.get("ar.art.clearblocks","Clear existing blocks in area"),clearBlocks,b->clearBlocks=b).padTop(4f).row();
-        }else{
-            dynamicOptionsTable.check(Core.bundle.get("ar.art.clearfloors","Place on clean floor"),clearBlocks,b->clearBlocks=b).row();
-        }
-    }
+         try {
+            fc = Class.forName("mindustry.ui.FileChooser");
+         } catch (Throwable var8) {
+         }
 
-    private void addLayerCheck(Table parent,ButtonGroup<CheckBox> group,String text,LayerMode m){
-        CheckBox box=new CheckBox(text);
-        box.clicked(()->layerMode=m);
-        if(layerMode==m)box.setChecked(true);
-        group.add(box);
-        parent.add(box).row();
-    }
+         if (fc == null) {
+            fc = Class.forName("mindustry.ui.dialogs.FileChooser");
+         }
 
-    private void pickPNG(arc.func.Cons<Fi> cons){
-        try{
-            Class<?> fc=null;
-            try{fc=Class.forName("mindustry.ui.FileChooser");}catch(Throwable ignored){}
-            if(fc==null)fc=Class.forName("mindustry.ui.dialogs.FileChooser");
-            Method op=null;
-            for(Method m:fc.getMethods())if(m.getName().equals("open")){op=m;break;}
-            if(op!=null){
-                Object fci=op.getParameterTypes()[0]==String.class?op.invoke(null,"png"):op.invoke(null,(Object)new String[]{"png"});
-                for(Method m:fci.getClass().getMethods())if(m.getName().equals("submit")){m.invoke(fci,cons);return;}
+         Method op = null;
+         Method[] var3 = fc.getMethods();
+         int var4 = var3.length;
+
+         int var5;
+         for(var5 = 0; var5 < var4; ++var5) {
+            Method m = var3[var5];
+            if (m.getName().equals("open")) {
+               op = m;
+               break;
             }
-        }catch(Throwable ignored){}
-        try{
-            for(Method m:mindustry.core.Platform.class.getMethods()){
-                if(m.getName().equals("showFileChooser")){
-                    if(m.getParameterTypes().length==3){m.invoke(Vars.platform,true,"png",cons);return;}
-                    if(m.getParameterTypes().length==4){m.invoke(Vars.platform,true,"Select PNG","png",cons);return;}
-                }
-            }
-        }catch(Throwable ignored){}
-    }
+         }
 
-    private void chooseImage(){
-        pickPNG(file->Core.app.post(()->{
-            try{
-                Pixmap pix=new Pixmap(file);
-                origWidth=pix.width;
-                origHeight=pix.height;
-                pix.dispose();
-                selectedFile=file;
-                fileLabel.setText(file.name()+" ("+origWidth+"x"+origHeight+")");
-                
-                float scale=Math.min((float)Vars.editor.width()/origWidth,(float)Vars.editor.height()/origHeight);
-                scale=Math.min(scale,1f);
-                targetWidth=Math.max(1,Math.round(origWidth*scale));
-                targetHeight=Math.max(1,Math.round(origHeight*scale));
-                
-                widthField.setText(String.valueOf(targetWidth));
-                heightField.setText(String.valueOf(targetHeight));
-            }catch(Throwable e){
-                Vars.ui.showErrorMessage(Core.bundle.get("ar.art.invalidimage","Failed to load image: ")+e.getMessage());
-            }
-        }));
-    }
+         if (op != null) {
+            Object fci = op.getParameterTypes()[0] == String.class ? op.invoke((Object)null, "png") : op.invoke((Object)null, new String[]{"png"});
+            Method[] var15 = fci.getClass().getMethods();
+            var5 = var15.length;
 
-    private void runGeneration(){
-        if(selectedFile==null)return;
-        hide();
-        Time.runTask(2f,()->{
-            try{
-                MapArtGenerator.generate(selectedFile,targetWidth,targetHeight,style,layerMode,clearBlocks);
-            }catch(Throwable e){
-                Vars.ui.showException(e);
+            for(int var17 = 0; var17 < var5; ++var17) {
+               Method m = var15[var17];
+               if (m.getName().equals("submit")) {
+                  m.invoke(fci, cons);
+                  return;
+               }
             }
-        });
-    }
+         }
+      } catch (Throwable var10) {
+      }
 
-    private void runInteractivePlace(){
-        if(selectedFile==null)return;
-        hide();
-        Time.runTask(2f,()->ArtPlaceOverlay.startPlacement(selectedFile,targetWidth,targetHeight,style,layerMode,clearBlocks));
-    }
-}
+      try {
+         Method[] var11 = Platform.class.getMethods();
+         int var12 = var11.length;
+
+         for(int var14 = 0; var14 < var12; ++var14) {
+            Method m = var11[var14];
+            if (m.getName().equals("showFileChooser")) {
+               if (m.getParameterTypes().length == 3) {
+                  m.invoke(Vars.platform, true, "png", cons);
+                  return;
+               }
+
+               if (m.getParameterTypes().length == 4) {
+                  m.invoke(Vars.platform, true, "Select PNG", "png", cons);
+                  return;
+               }
+            }
+         }
+      } catch (Throwable var9) {
+      }
+
+   }
+
+   private static String getLayerModeName(MapArtDialog.LayerMode m) {
+      switch(m) {
+      case floorOnly:
+         return Core.bundle.get("editor.mapart.layer.floor", "Floor Only");
+      case wallOnly:
+         return Core.bundle.get("editor.mapart.layer.wall", "Walls Only");
+      default:
+         return Core.bundle.get("editor.mapart.layer.both", "Floor + Walls");
+      }
+   }
+
+   public static void initDefaultAllowedBlocks() {
+      allowedBlocks.clear();
+      Iterator var0 = Vars.content.blocks().iterator();
+
+      while(var0.hasNext()) {
+         Block b = (Block)var0.next();
+         if (isEligibleTerrainBlock(b)) {
+            allowedBlocks.add(b);
+         }
+      }
+
+   }
+
+   public static boolean isEligibleTerrainBlock(Block b) {
+      if (b != null && b != Blocks.air && !b.synthetic() && !b.isOverlay()) {
+         if (b.name.contains("colored")) {
+            return false;
+         } else if (b instanceof Floor && ((Floor)b).isLiquid) {
+            return true;
+         } else {
+            return (b.isFloor() || b.isStatic()) && b.mapColor != null && b.mapColor.a > 0.5F && b.inEditor;
+         }
+      } else {
+         return false;
+      }
+   }
+
+   private static void showBlockFilterDialog(Runnable onCloseUpdate) {
+      BaseDialog bd = new BaseDialog(Core.bundle.get("editor.mapart.selectblocks", "Select Allowed Blocks"));
+      Table grid = new Table();
+      String[] search = new String[]{""};
+      int[] tab = new int[]{0};
+      Label countLabel = new Label("");
+      Runnable updateCount = () -> {
+         countLabel.setText("Selected: [accent]" + allowedBlocks.size + "[] blocks");
+      };
+      Runnable rebuildGrid = () -> {
+         grid.clearChildren();
+         updateCount.run();
+         int cols = 0;
+         String q = search[0].toLowerCase().trim();
+         Iterator var6 = Vars.content.blocks().iterator();
+
+         while(true) {
+            Block b;
+            do {
+               do {
+                  do {
+                     do {
+                        if (!var6.hasNext()) {
+                           return;
+                        }
+
+                        b = (Block)var6.next();
+                     } while(!isEligibleTerrainBlock(b));
+                  } while(tab[0] == 1 && !b.isFloor());
+               } while(tab[0] == 2 && b.isFloor());
+            } while(!q.isEmpty() && !b.localizedName.toLowerCase().contains(q) && !b.name.toLowerCase().contains(q));
+
+            Button btn = new Button(Styles.flatTogglet);
+            boolean sel = allowedBlocks.contains(b);
+            btn.setChecked(sel);
+            Image iconImg = new Image(b.uiIcon);
+            iconImg.setScaling(Scaling.fit);
+            iconImg.setColor(sel ? Color.white : new Color(0.2F, 0.2F, 0.2F, 0.7F));
+            Label checkMark = new Label(() -> {
+               return allowedBlocks.contains(b) ? "[lime]✔[]" : "";
+            });
+            checkMark.setAlignment(18);
+            Stack st = new Stack(new Element[]{iconImg, checkMark});
+            btn.add(st).size(34.0F);
+            btn.clicked(() -> {
+               if (allowedBlocks.contains(b)) {
+                  allowedBlocks.remove(b);
+               } else {
+                  allowedBlocks.add(b);
+               }
+
+               boolean ns = allowedBlocks.contains(b);
+               btn.setChecked(ns);
+               iconImg.setColor(ns ? Color.white : new Color(0.2F, 0.2F, 0.2F, 0.7F));
+               updateCount.run();
+            });
+            grid.add(btn).size(48.0F).pad(3.0F).tooltip(b.localizedName);
+            ++cols;
+            if (cols % 8 == 0) {
+               grid.row();
+            }
+         }
+      };
+      bd.cont.add(countLabel).padBottom(4.0F).row();
+      bd.cont.table((tabs) -> {
+         tabs.defaults().size(110.0F, 36.0F).pad(2.0F);
+         tabs.button("All", Styles.flatTogglet, () -> {
+            tab[0] = 0;
+            rebuildGrid.run();
+         }).update((b) -> {
+            b.setChecked(tab[0] == 0);
+         });
+         tabs.button("Floors", Styles.flatTogglet, () -> {
+            tab[0] = 1;
+            rebuildGrid.run();
+         }).update((b) -> {
+            b.setChecked(tab[0] == 1);
+         });
+         tabs.button("Walls", Styles.flatTogglet, () -> {
+            tab[0] = 2;
+            rebuildGrid.run();
+         }).update((b) -> {
+            b.setChecked(tab[0] == 2);
+         });
+      }).row();
+      bd.cont.table((top) -> {
+         top.defaults().size(120.0F, 36.0F).pad(2.0F);
+         top.button("Select All", Styles.flatt, () -> {
+            Iterator var2 = Vars.content.blocks().iterator();
+
+            while(true) {
+               Block b;
+               do {
+                  do {
+                     do {
+                        if (!var2.hasNext()) {
+                           rebuildGrid.run();
+                           return;
+                        }
+
+                        b = (Block)var2.next();
+                     } while(!isEligibleTerrainBlock(b));
+                  } while(tab[0] == 1 && !b.isFloor());
+               } while(tab[0] == 2 && b.isFloor());
+
+               allowedBlocks.add(b);
+            }
+         });
+         top.button("Clear All", Styles.flatt, () -> {
+            if (tab[0] == 0) {
+               allowedBlocks.clear();
+            } else {
+               Seq<Block> rem = new Seq();
+               ObjectSetIterator var3 = allowedBlocks.iterator();
+
+               Block b;
+               while(var3.hasNext()) {
+                  b = (Block)var3.next();
+                  if (tab[0] == 1 && b.isFloor()) {
+                     rem.add(b);
+                  }
+
+                  if (tab[0] == 2 && !b.isFloor()) {
+                     rem.add(b);
+                  }
+               }
+
+               Iterator var5 = rem.iterator();
+
+               while(var5.hasNext()) {
+                  b = (Block)var5.next();
+                  allowedBlocks.remove(b);
+               }
+            }
+
+            rebuildGrid.run();
+         });
+      }).row();
+      bd.cont.field("", (s) -> {
+         search[0] = s;
+         rebuildGrid.run();
+      }).width(340.0F).padBottom(6.0F).row();
+      rebuildGrid.run();
+      bd.cont.pane(grid).size(Math.min((float)Core.graphics.getWidth() * 0.9F, 460.0F), Math.min((float)Core.graphics.getHeight() * 0.65F, 340.0F));
+      bd.hidden(onCloseUpdate);
+      bd.addCloseButton();
+      bd.show();
+   }
+
+   static {
+      style = MapArtDialog.ArtStyle.colored;
+      layerMode = MapArtDialog.LayerMode.floorOnly;
+      useAllBlocks = true;
+      allowedBlocks = new ObjectSet();
+      initializedDefaults = false;
+   }
+
+   public static enum LayerMode {
+      floorOnly,
+      wallOnly,
+      floorAndWall;
+
+      // $FF: synthetic method
+      private static MapArtDialog.LayerMode[] $values() {
+         return new MapArtDialog.LayerMode[]{floorOnly, wallOnly, floorAndWall};
+      }
+   }
+
+   public static enum ArtStyle {
+      colored,
+      terrain;
+
+      // $FF: synthetic method
+      private static MapArtDialog.ArtStyle[] $values() {
+         return new MapArtDialog.ArtStyle[]{colored, terrain};
+      }
+   }
+                    }
