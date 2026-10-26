@@ -15,7 +15,6 @@ public class LeftSideUi{
         StencilManager.init();
         Events.run(Trigger.update,()->{
             if(Vars.ui!=null&&Vars.ui.editor!=null&&Vars.ui.editor.isShown()){
-                FogOfWarManager.attachOverlay();
                 injectButtons(Vars.ui.editor);
             }
         });
@@ -38,13 +37,6 @@ public class LeftSideUi{
             b.add(Core.bundle.get("ar.art.button","Map Art")).growX().left();
         },Styles.flatt,()->new MapArtDialog().show()).growX().height(34f).padTop(2f).get();
         artBtn.name="ar-art-btn";
-        target.row();
-        Button fogBtn=target.button(b->{
-            b.left();
-            b.image(Icon.eyeSmall).size(20f).padRight(6f);
-            b.add(Core.bundle.get("ar.fog.button","Fog of War")).growX().left();
-        },Styles.flatt,FogOfWarManager::showDialog).growX().height(34f).padTop(2f).get();
-        fogBtn.name="ar-fog-btn";
         wrapLeftPanelScroll(dialog,target);
     }
     private static void wrapLeftPanelScroll(MapEditorDialog dialog,Table target){
