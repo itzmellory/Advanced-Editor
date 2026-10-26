@@ -11,7 +11,6 @@ import arc.scene.ui.TextField;
 import arc.scene.ui.layout.Stack;
 import arc.scene.ui.layout.Table;
 import arc.struct.ObjectSet;
-import arc.struct.Seq;
 import arc.util.Strings;
 import mindustry.Vars;
 import mindustry.editor.MapEditor;
@@ -63,13 +62,10 @@ injectLeftControls(e);
 
 private static void rebuildBrushBox(Table parent, Stack stack, Slider slider) {
 try {
-Seq<Element> saved = new Seq();
-for(Element e : parent.getChildren()) {
-saved.add(e);
-}
+Element[] saved = parent.getChildren().toArray(Element.class);
 parent.clearChildren();
-for(int i = 0; i < saved.size(); ++i) {
-Element el = (Element)saved.get(i);
+for (int i = 0; i < saved.length; ++i) {
+Element el = saved[i];
 if (el == stack) {
 parent.add(el).growX().padTop(4.0F).row();
 Table inputBox = new Table();
