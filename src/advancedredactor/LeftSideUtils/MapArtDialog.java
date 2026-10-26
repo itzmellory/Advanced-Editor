@@ -2,6 +2,7 @@ package advancedredactor.LeftSideUtils;
 import arc.*;
 import arc.files.*;
 import arc.graphics.*;
+import arc.util.Time;
 import arc.scene.ui.*;
 import arc.scene.ui.layout.*;
 import mindustry.*;
@@ -114,7 +115,7 @@ public class MapArtDialog extends BaseDialog{
         cont.add(pane).maxWidth(520f);
     }
     private void addStyleBtn(Table parent,ButtonGroup<TextButton> group,String text,ArtStyle s){
-        TextButton btn=new TextButton(text,Styles.toggleT);
+        TextButton btn=new TextButton(text,Styles.togglet);
         btn.clicked(()->{
             style=s;
             rebuildDynamicOptions();
@@ -133,9 +134,7 @@ public class MapArtDialog extends BaseDialog{
             addLayerCheck(dynamicOptionsTable,grp,Core.bundle.get("ar.art.layer.floors","Floors Only (Walkable)"),LayerMode.FLOORS_ONLY);
             addLayerCheck(dynamicOptionsTable,grp,Core.bundle.get("ar.art.layer.walls","Walls Only"),LayerMode.WALLS_ONLY);
             dynamicOptionsTable.check(Core.bundle.get("ar.art.clearblocks","Clear existing blocks in area"),clearBlocks,b->clearBlocks=b).padTop(4f).row();
-        }else{
-            dynamicOptionsTable.check(Core.bundle.get("ar.art.clearfloors","Place on clean floor"),clearBlocks,b->clearBlocks=b).row();
-        }
+        }else dynamicOptionsTable.check(Core.bundle.get("ar.art.clearfloors","Place on clean floor"),clearBlocks,b->clearBlocks=b).row();
     }
     private void addLayerCheck(Table parent,ButtonGroup<CheckBox> group,String text,LayerMode m){
         CheckBox box=new CheckBox(text);
