@@ -22,9 +22,7 @@ public class GeneratorUI{
             AdvancedRotationFilter::new,
             AdvancedRuinFilter::new,
             AdvancedTerrainFilter::new,
-            AdvancedWaterFilter::new,
-            MeteorImpactFilter::new,
-            RichOreClusterFilter::new
+            AdvancedWaterFilter::new
         );
         registerIntoVanillaArray();
         Events.run(Trigger.update,GeneratorUI::injectDialogColumn);
