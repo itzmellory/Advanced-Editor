@@ -10,24 +10,24 @@ java: true
 hidden: true
 description:
     '''
-    [[]#ffffff] Adv[[]][[]#e3e3e3]anced[[]] [[]#c7c7c7]Edi[[]][[]#ababab]tor[[]][[]#8f8f8f] [[]]
+    [[]#ffffff] Adv[[]][[]#e3e3e3]anced[[]] [[]#c7c7c7]Map[[]] [[]#ababab]Edi[[]][[]#8f8f8f]tor [[]]
 
-    [[]#e6e6e6] Next-generation terrain synthesis and advanced mapping utilities[[]]
-    [[]#cccccc]Maps created with this mod are[[]] [[]#ffffff]100% compatible with vanilla Mindustry [[]]
+    [[]#e6e6e6] Next-generation complex terrain synthesis and advanced mapmaker tools[[]]
+    [[]#cccccc]Maps created with this modification are[[]] [[]#ffffff]fully compatible with the original game [[]]
 
-    [[]#ffffff] Fea[[]][[]#c7c7c7]tures[[]] [[]#8f8f8f](EN):[[]]
+    [[]#ffffff] Fea[[]][[]#c7c7c7]tu[[]][[]#8f8f8f]res:[[]]
 
     [[]#ffffff]- Adv[[]][[]#e3e3e3]anced[[]] [[]#ababab]Generators[[]] [[]#8f8f8f] -[[]]
-    [[]#b3b3b3]Advanced Terrain (noise, octaves, falloff, tilt, distortion), Advanced Water (shoals, depth warp, fragmentation), Advanced Ruins (scatter & structured rooms, routes, custom steps), and Advanced Rotation.[[]]
+    [[]#b3b3b3]Generators for terrain (noise, octaves, falloff, tilt, distortion), water (shallow water, shoals, depth warping), ruins (scatter and structures with rooms, corridors, and step configuration), and block rotation.[[]]
 
-    [[]#ffffff]- Ter[[]][[]#e3e3e3]rain[[]] [[]#ababab]Operations & Schematics[[]] [[]#8f8f8f] -[[]]
-    [[]#b3b3b3]Select, copy, cut, paste, rotate, and flip map areas. Save and load full terrain templates, use rectangular, cliff, and custom brushes, plus strict 45-degree line drawing.[[]]
+    [[]#ffffff]- Ter[[]][[]#e3e3e3]rain[[]] [[]#ababab]Clipboard and Schematics[[]] [[]#8f8f8f] -[[]]
+    [[]#b3b3b3]Selection, copying, cutting, pasting, rotation, and flipping of terrain areas. Saving terrain templates, rectangular and shaped brushes, cliff editor, and strict 45-degree lines.[[]]
 
-    [[]#ffffff]- Map[[]] [[]#e3e3e3]Art &[[]] [[]#ababab]Stencil Overlay[[]] [[]#8f8f8f] -[[]]
-    [[]#b3b3b3]Convert images into pixel art (Terrain, Sorters, Canvas) with layer filtering and drag-and-drop placement. Project customizable semi-transparent reference stencils onto the map.[[]]
+    [[]#ffffff]- Map[[]] [[]#e3e3e3]Art[[]] [[]#ababab]and Stencils[[]] [[]#8f8f8f] -[[]]
+    [[]#b3b3b3]Converting images into structures made of terrain or colored blocks. Overlaying semi-transparent stencils on top of the map for accurate drawing.[[]]
 
-    [[]#ffffff]- Unl[[]][[]#e3e3e3]ocked[[]] [[]#ababab]Map Dimensions[[]] [[]#8f8f8f] -[[]]
-    [[]#b3b3b3]Built-in Map Size Unlocker completely removes vanilla minimum and maximum map boundary limits.[[]]
+    [[]#ffffff]- Rem[[]][[]#e3e3e3]oving[[]] [[]#ababab]Size Limits[[]] [[]#8f8f8f] -[[]]
+    [[]#b3b3b3]The built-in unlocker module completely removes standard limits on the minimum and maximum size of created maps.[[]]
 
     [[]#ffffff]───────[[]][[]#e3e3e3]───────[[]][[]#c7c7c7]───  ───[[]][[]#ababab]───────[[]][[]#8f8f8f]───────[[]]
 
@@ -54,22 +54,22 @@ description:
 
     [[]#ffffff] 高级[[]][[]#e3e3e3]地图[[]][[]#c7c7c7]编辑[[]][[]#ababab]器[[]][[]#8f8f8f] [[]]
 
-    [[]#e6e6e6] 新一代地形合成系统与专业制图工具集[[]]
-    [[]#cccccc]使用本模组创建的地图[[]] [[]#ffffff]100% 兼容原版 Mindustry [[]]
+    [[]#e6e6e6] 新一代复杂地形合成与扩展地图制作工具[[]]
+    [[]#cccccc]使用此模组创建的地图[[]] [[]#ffffff]与原版游戏完全兼容 [[]]
 
-    [[]#ffffff] 核心[[]][[]#c7c7c7]功能[[]] [[]#8f8f8f](ZH):[[]]
+    [[]#ffffff] 功[[]][[]#c7c7c7]能特[[]][[]#8f8f8f]点：[[]]
 
-    [[]#ffffff]- 高级[[]][[]#e3e3e3]地形[[]] [[]#ababab]生成器[[]] [[]#8f8f8f] -[[]]
-    [[]#b3b3b3]包含高级地形（噪声、八度、衰减、倾斜与扭曲）、高级水域（浅滩、深度扭曲与碎片化）、高级废墟（分散与结构化房间、主通道及自定义步骤）和高级方向过滤器。[[]]
+    [[]#ffffff]- 高级[[]][[]#e3e3e3]生成[[]] [[]#ababab]器[[]] [[]#8f8f8f] -[[]]
+    [[]#b3b3b3]包含地形（噪声、八度、衰减、倾斜、扭曲）、水域（浅水、浅滩、深度扭曲）、废墟（散布模式以及带有房间、走廊和步骤设置的结构）与方块旋转生成器。[[]]
 
-    [[]#ffffff]- 地形[[]][[]#e3e3e3]剪贴板[[]] [[]#ababab]与蓝图系统[[]] [[]#8f8f8f] -[[]]
-    [[]#b3b3b3]支持地图区域的框选、复制、剪切、粘贴、旋转与翻转。支持保存和加载地形蓝图，提供矩形画笔、自定义形状画笔、悬崖工具及严格 45° 直线绘制模式。[[]]
+    [[]#ffffff]- 地形[[]][[]#e3e3e3]剪贴板[[]] [[]#ababab]与蓝图[[]] [[]#8f8f8f] -[[]]
+    [[]#b3b3b3]支持地形区域的框选、复制、剪切、粘贴、旋转与翻转。支持保存地形模板，提供矩形与形状画笔、悬崖编辑器以及严格 45 度角直线。[[]]
 
-    [[]#ffffff]- 像素[[]][[]#e3e3e3]地图画[[]] [[]#ababab]与参考模板[[]] [[]#8f8f8f] -[[]]
-    [[]#b3b3b3]将图片转换为地图像素画（支持地形、分类器、画布模式及图层过滤），可在地图上自由拖动定位；支持叠加可调透明度的 PNG 图像模板辅助绘图。[[]]
+    [[]#ffffff]- 地图[[]][[]#e3e3e3]画与[[]] [[]#ababab]参考模板[[]] [[]#8f8f8f] -[[]]
+    [[]#b3b3b3]将图像转换为由地形或彩色方块构成的建筑。在地图上方叠加半透明参考模板以进行精确绘制。[[]]
 
     [[]#ffffff]- 解除[[]][[]#e3e3e3]尺寸[[]] [[]#ababab]限制[[]] [[]#8f8f8f] -[[]]
-    [[]#b3b3b3]内置地图尺寸解锁器，彻底移除原版对地图最小与最大尺寸的限制。[[]]
+    [[]#b3b3b3]内置解锁模块彻底移除了创建地图时的最小与最大标准尺寸限制。[[]]
 
     [[]#ffffff]───────[[]][[]#e3e3e3]───────[[]][[]#c7c7c7]───  ───[[]][[]#ababab]───────[[]][[]#8f8f8f]───────[[]]
 
