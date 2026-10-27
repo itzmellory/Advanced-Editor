@@ -1,4 +1,5 @@
 package advancedredactor.ui;
+
 import advancedredactor.LeftSideUtils.*;
 import arc.*;
 import arc.scene.*;
@@ -11,9 +12,11 @@ import mindustry.editor.*;
 import mindustry.game.EventType.Trigger;
 import mindustry.gen.*;
 import mindustry.ui.*;
+
 public class LeftSideUi{
     private static final ObjectSet<Table> hookedBrushTables=new ObjectSet<>();
     private static final ObjectSet<Table> hookedMidTables=new ObjectSet<>();
+
     public static void init(){
         StencilManager.init();
         Events.run(Trigger.update,()->{
@@ -27,6 +30,7 @@ public class LeftSideUi{
             }
         });
     }
+
     private static void injectLeftControls(Element root){
         if(root instanceof Slider){
             Slider sl=(Slider)root;
@@ -50,6 +54,7 @@ public class LeftSideUi{
             for(Element e:((Group)root).getChildren())injectLeftControls(e);
         }
     }
+
     private static void rebuildBrushBox(Table parent,Stack stack,Slider slider){
         try{
             Seq<Element> saved=new Seq<>();
@@ -79,6 +84,7 @@ public class LeftSideUi{
             }
         }catch(Exception ignored){}
     }
+
     private static void appendBottomUtils(Table mid){
         try{
             mid.row();
@@ -89,6 +95,7 @@ public class LeftSideUi{
             mid.add(utils).growX().row();
         }catch(Exception ignored){}
     }
+
     private static void wrapLeftPanelScroll(MapEditorDialog dialog,Table target){
         try{
             Element curr=target;
@@ -112,7 +119,9 @@ public class LeftSideUi{
                             ScrollPane sp=new ScrollPane(leftColumn,Styles.noBarPane);
                             sp.setScrollingDisabled(true,false);
                             sp.setOverscroll(false,false);
-                            pt.add(sp).growY().top().left();
+                            sp.setFadeScrollBars(false);
+                            sp.setForceScroll(false,true);
+                            pt.add(sp).growY().top().left().maxWidth(340f);
                         }else if(el==dialog.getView()){
                             pt.add(el).grow();
                         }else{
