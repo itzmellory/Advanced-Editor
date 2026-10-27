@@ -109,12 +109,13 @@ public class LeftSideUi{
                     pt.clearChildren();
                     for(Element el:seq){
                         if(el==leftColumn){
+                            el.setWidth(280f);
                             ScrollPane sp=new ScrollPane(leftColumn,Styles.noBarPane);
                             sp.setScrollingDisabled(true,false);
                             sp.setOverscroll(false,false);
                             sp.setFadeScrollBars(false);
                             sp.setForceScroll(false,true);
-                            pt.add(sp).growY().top().left().maxWidth(280f);
+                            pt.add(sp).growY().top().left().width(280f).maxWidth(280f);
                         }else if(el==dialog.getView()){
                             pt.add(el).grow();
                         }else{
