@@ -1,5 +1,4 @@
 package advancedredactor.ui;
-
 import advancedredactor.LeftSideUtils.*;
 import arc.*;
 import arc.scene.*;
@@ -12,11 +11,9 @@ import mindustry.editor.*;
 import mindustry.game.EventType.Trigger;
 import mindustry.gen.*;
 import mindustry.ui.*;
-
 public class LeftSideUi{
     private static final ObjectSet<Table> hookedBrushTables=new ObjectSet<>();
     private static final ObjectSet<Table> hookedMidTables=new ObjectSet<>();
-
     public static void init(){
         StencilManager.init();
         Events.run(Trigger.update,()->{
@@ -30,7 +27,6 @@ public class LeftSideUi{
             }
         });
     }
-
     private static void injectLeftControls(Element root){
         if(root instanceof Slider){
             Slider sl=(Slider)root;
@@ -54,7 +50,6 @@ public class LeftSideUi{
             for(Element e:((Group)root).getChildren())injectLeftControls(e);
         }
     }
-
     private static void rebuildBrushBox(Table parent,Stack stack,Slider slider){
         try{
             Seq<Element> saved=new Seq<>();
@@ -63,7 +58,7 @@ public class LeftSideUi{
             for(int i=0;i<saved.size;i++){
                 Element el=saved.get(i);
                 if(el==stack){
-                    parent.add(el).growX().padTop(4f).row();
+                    parent.add(el).growX().row();
                     Table inputBox=new Table();
                     inputBox.left();
                     inputBox.add(Core.bundle.get("editor.brushsize.input","Brush:")).style(Styles.outlineLabel).padRight(4f);
@@ -79,23 +74,21 @@ public class LeftSideUi{
                         field.setText(Strings.fixed(Vars.editor.brushSize,1));
                     });
                     inputBox.add(field).width(80f).height(32f);
-                    parent.add(inputBox).growX().padTop(4f).padBottom(6f).row();
+                    parent.add(inputBox).growX().row();
                 }else parent.add(el).growX().row();
             }
         }catch(Exception ignored){}
     }
-
     private static void appendBottomUtils(Table mid){
         try{
             mid.row();
             Table utils=new Table();
-            utils.defaults().growX().height(40f).padTop(3f).padBottom(3f);
+            utils.defaults().growX().height(40f);
             utils.button(Core.bundle.get("editor.stencil.btn","Stencil"),Icon.pasteSmall,Styles.flatt,StencilManager::showDialog).row();
             utils.button(Core.bundle.get("editor.mapart.btn","Pixel Art"),Icon.imageSmall,Styles.flatt,()->new MapArtDialog().show()).row();
             mid.add(utils).growX().row();
         }catch(Exception ignored){}
     }
-
     private static void wrapLeftPanelScroll(MapEditorDialog dialog,Table target){
         try{
             Element curr=target;
@@ -121,7 +114,7 @@ public class LeftSideUi{
                             sp.setOverscroll(false,false);
                             sp.setFadeScrollBars(false);
                             sp.setForceScroll(false,true);
-                            pt.add(sp).growY().top().left().maxWidth(340f);
+                            pt.add(sp).growY().top().left().maxWidth(300f);
                         }else if(el==dialog.getView()){
                             pt.add(el).grow();
                         }else{
