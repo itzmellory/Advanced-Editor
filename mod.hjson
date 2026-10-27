@@ -1,4 +1,4 @@
-name: "advanced-redactor"
+name: "advanced-editor"
 displayName: "[[]#ffffff] Adv[[]][[]#e3e3e3]anced[[]] [[]#c7c7c7]Edi[[]][[]#ababab]tor[[]][[]#8f8f8f] [[]]"
 subtitle: "[[]#ffffff]⚠ Created by VI[[]] [[]#c7c7c7]Clan [[]]"
 author: "[[]#ffffff]⚠ X-Tree[[]] [[]#c7c7c7]and[[]] [[]#8f8f8f]VI Clan [[]]"
@@ -10,39 +10,66 @@ java: true
 hidden: true
 description:
     '''
-    [[]#ffffff] The[[]] [[]#e3e3e3]Ulti[[]][[]#c7c7c7]mate[[]] [[]#ababab]Map[[]] [[]#8f8f8f]Editor [[]]
+    [[]#ffffff] Adv[[]][[]#e3e3e3]anced[[]] [[]#c7c7c7]Edi[[]][[]#ababab]tor[[]][[]#8f8f8f] [[]]
 
     [[]#e6e6e6] Next-generation terrain synthesis and advanced mapping utilities[[]]
     [[]#cccccc]Maps created with this mod are[[]] [[]#ffffff]100% compatible with vanilla Mindustry [[]]
 
     [[]#ffffff] Fea[[]][[]#c7c7c7]tures[[]] [[]#8f8f8f](EN):[[]]
 
-    [[]#ffffff]- Cus[[]][[]#e3e3e3]tom[[]] [[]#ababab]Generators[[]] [[]#8f8f8f] -[[]]
-    [[]#b3b3b3]Advanced Terrain, Water, Ruins, and Rotation filters for complex landscapes.[[]]
+    [[]#ffffff]- Adv[[]][[]#e3e3e3]anced[[]] [[]#ababab]Generators[[]] [[]#8f8f8f] -[[]]
+    [[]#b3b3b3]Advanced Terrain (noise, octaves, falloff, tilt, distortion), Advanced Water (shoals, depth warp, fragmentation), Advanced Ruins (scatter & structured rooms, routes, custom steps), and Advanced Rotation.[[]]
 
-    [[]#ffffff]- Ext[[]][[]#e3e3e3]ended[[]] [[]#ababab]Editor UI[[]] [[]#8f8f8f] -[[]]
-    [[]#b3b3b3]Dedicated generator columns, Map Art tools, and Land Copy-Paste utilities.[[]]
+    [[]#ffffff]- Ter[[]][[]#e3e3e3]rain[[]] [[]#ababab]Operations & Schematics[[]] [[]#8f8f8f] -[[]]
+    [[]#b3b3b3]Select, copy, cut, paste, rotate, and flip map areas. Save and load full terrain templates, use rectangular, cliff, and custom brushes, plus strict 45-degree line drawing.[[]]
 
-    [[]#ffffff]- No[[]] [[]#e3e3e3]Lim[[]][[]#ababab]its[[]] [[]#8f8f8f] -[[]]
-    [[]#b3b3b3]Built-in Map Size Unlocker completely removes vanilla dimension boundaries.[[]]
+    [[]#ffffff]- Map[[]] [[]#e3e3e3]Art &[[]] [[]#ababab]Stencil Overlay[[]] [[]#8f8f8f] -[[]]
+    [[]#b3b3b3]Convert images into pixel art (Terrain, Sorters, Canvas) with layer filtering and drag-and-drop placement. Project customizable semi-transparent reference stencils onto the map.[[]]
+
+    [[]#ffffff]- Unl[[]][[]#e3e3e3]ocked[[]] [[]#ababab]Map Dimensions[[]] [[]#8f8f8f] -[[]]
+    [[]#b3b3b3]Built-in Map Size Unlocker completely removes vanilla minimum and maximum map boundary limits.[[]]
 
     [[]#ffffff]───────[[]][[]#e3e3e3]───────[[]][[]#c7c7c7]───  ───[[]][[]#ababab]───────[[]][[]#8f8f8f]───────[[]]
 
     [[]#ffffff] Про[[]][[]#e3e3e3]двину[[]][[]#c7c7c7]тый[[]] [[]#ababab]Редак[[]][[]#8f8f8f]тор Карт [[]]
 
-    [[]#e6e6e6] Генерация сложного рельефа и расширенные утилиты картографа[[]]
-    [[]#cccccc]Карты, созданные с этим модом,[[]] [[]#ffffff]полностью совместимы с ванильной игрой [[]]
+    [[]#e6e6e6] Синтез сложного рельефа нового поколения и расширенные инструменты картографа[[]]
+    [[]#cccccc]Карты, созданные с этой модификацией,[[]] [[]#ffffff]полностью совместимы с оригинальной игрой [[]]
 
-    [[]#ffffff] Осо[[]][[]#c7c7c7]бенно[[]][[]#8f8f8f]сти (RU):[[]]
+    [[]#ffffff] Осо[[]][[]#c7c7c7]бенно[[]][[]#8f8f8f]сти:[[]]
 
     [[]#ffffff]- Про[[]][[]#e3e3e3]двинутые[[]] [[]#ababab]Генераторы[[]] [[]#8f8f8f] -[[]]
-    [[]#b3b3b3]Специализированные фильтры ландшафта, воды, руин и вращения (Rotation).[[]]
+    [[]#b3b3b3]Генераторы рельефа (шум, октавы, спад, наклон, искажение), воды (мелководье, отмели, искривление глубины), руин (разброс и структуры с комнатами, коридорами и настройкой шагов) и вращения блоков.[[]]
 
-    [[]#ffffff]- Рас[[]][[]#e3e3e3]ширенный[[]] [[]#ababab]Интерфейс[[]] [[]#8f8f8f] -[[]]
-    [[]#b3b3b3]Отдельная колонка фильтров, Map Art генератор и утилиты копирования зон (Copy-Paste).[[]]
+    [[]#ffffff]- Буф[[]][[]#e3e3e3]ер[[]] [[]#ababab]Ландшафта и Схемы[[]] [[]#8f8f8f] -[[]]
+    [[]#b3b3b3]Выделение, копирование, вырезание, вставка, поворот и отражение участков местности. Сохранение шаблонов рельефа, прямоугольные и фигурные кисти, редактор скал и линии строго под 45 градусов.[[]]
 
-    [[]#ffffff]- Сня[[]][[]#e3e3e3]тие[[]] [[]#ababab]Лимитов[[]] [[]#8f8f8f] -[[]]
-    [[]#b3b3b3]Map Size Unlocker позволяет обходить стандартные ограничения на максимальный размер карты.[[]]
+    [[]#ffffff]- Кар[[]][[]#e3e3e3]тины на[[]] [[]#ababab]Карте и Трафареты[[]] [[]#8f8f8f] -[[]]
+    [[]#b3b3b3]Преобразование изображений в постройки из ландшафта, сортировщиков или холстов с выбором слоев и свободным перемещением. Наложение полупрозрачных трафаретов поверх карты для точной отрисовки.[[]]
+
+    [[]#ffffff]- Сня[[]][[]#e3e3e3]тие[[]] [[]#ababab]Ограничений Размера[[]] [[]#8f8f8f] -[[]]
+    [[]#b3b3b3]Встроенный модуль разблокировки полностью убирает стандартные лимиты на минимальный и максимальный размер создаваемых карт.[[]]
+
+    [[]#ffffff]───────[[]][[]#e3e3e3]───────[[]][[]#c7c7c7]───  ───[[]][[]#ababab]───────[[]][[]#8f8f8f]───────[[]]
+
+    [[]#ffffff] 高级[[]][[]#e3e3e3]地图[[]][[]#c7c7c7]编辑[[]][[]#ababab]器[[]][[]#8f8f8f] [[]]
+
+    [[]#e6e6e6] 新一代地形合成系统与专业制图工具集[[]]
+    [[]#cccccc]使用本模组创建的地图[[]] [[]#ffffff]100% 兼容原版 Mindustry [[]]
+
+    [[]#ffffff] 核心[[]][[]#c7c7c7]功能[[]] [[]#8f8f8f](ZH):[[]]
+
+    [[]#ffffff]- 高级[[]][[]#e3e3e3]地形[[]] [[]#ababab]生成器[[]] [[]#8f8f8f] -[[]]
+    [[]#b3b3b3]包含高级地形（噪声、八度、衰减、倾斜与扭曲）、高级水域（浅滩、深度扭曲与碎片化）、高级废墟（分散与结构化房间、主通道及自定义步骤）和高级方向过滤器。[[]]
+
+    [[]#ffffff]- 地形[[]][[]#e3e3e3]剪贴板[[]] [[]#ababab]与蓝图系统[[]] [[]#8f8f8f] -[[]]
+    [[]#b3b3b3]支持地图区域的框选、复制、剪切、粘贴、旋转与翻转。支持保存和加载地形蓝图，提供矩形画笔、自定义形状画笔、悬崖工具及严格 45° 直线绘制模式。[[]]
+
+    [[]#ffffff]- 像素[[]][[]#e3e3e3]地图画[[]] [[]#ababab]与参考模板[[]] [[]#8f8f8f] -[[]]
+    [[]#b3b3b3]将图片转换为地图像素画（支持地形、分类器、画布模式及图层过滤），可在地图上自由拖动定位；支持叠加可调透明度的 PNG 图像模板辅助绘图。[[]]
+
+    [[]#ffffff]- 解除[[]][[]#e3e3e3]尺寸[[]] [[]#ababab]限制[[]] [[]#8f8f8f] -[[]]
+    [[]#b3b3b3]内置地图尺寸解锁器，彻底移除原版对地图最小与最大尺寸的限制。[[]]
 
     [[]#ffffff]───────[[]][[]#e3e3e3]───────[[]][[]#c7c7c7]───  ───[[]][[]#ababab]───────[[]][[]#8f8f8f]───────[[]]
 
