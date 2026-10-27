@@ -114,7 +114,7 @@ public class LeftSideUi{
                             sp.setOverscroll(false,false);
                             sp.setFadeScrollBars(false);
                             sp.setForceScroll(false,true);
-                            pt.add(sp).growY().top().left().maxWidth(300f);
+                            pt.add(sp).growY().top().left().maxWidth(280f);
                         }else if(el==dialog.getView()){
                             pt.add(el).grow();
                         }else{
