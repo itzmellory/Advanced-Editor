@@ -30,12 +30,16 @@ public class UpperUi{
         }
         MapView view=Vars.ui.editor.getView();
         if(view==null||view.parent==null)return;
-        if(topBar==null||topBar.parent!=view||lastView!=view)buildTopBar(view);
+        if(topBar==null||topBar.parent!=view.parent||lastView!=view)buildTopBar(view);
+        if(topBar!=null){
+            topBar.setSize(view.getWidth(),topBar.getHeight());
+            topBar.setPosition(view.x,view.y+view.getHeight()-topBar.getHeight());
+        }
     }
     private static void buildTopBar(MapView view){
         if(topBar!=null)topBar.remove();
         lastView=view;
-        Group parent=view;
+        Group parent=view.parent;
         float availableWidth=Math.max(1f,view.getWidth()-8f);
         if(view.getWidth()<=0f)availableWidth=Math.max(1f,Core.graphics.getWidth()*0.65f);
         int shapeCount=BrushShape.values().length;
@@ -44,7 +48,7 @@ public class UpperUi{
         float buttonHeight=Math.max(24f,Math.min(42f,buttonSize));
         float padding=Math.max(0f,buttonSize/21f);
         topBar=new Table();
-        topBar.setFillParent(true);
+        topBar.setFillParent(false);
         topBar.top();
         topBar.touchable=Touchable.childrenOnly;
         Table bar=new Table(Tex.button);
@@ -81,6 +85,9 @@ public class UpperUi{
         pane.setOverscroll(false,false);
         pane.setFadeScrollBars(false);
         topBar.add(pane).width(availableWidth).maxWidth(availableWidth).padTop(4f).center();
+        topBar.pack();
+        topBar.setSize(view.getWidth(),topBar.getHeight());
+        topBar.setPosition(view.x,view.y+view.getHeight()-topBar.getHeight());
         parent.addChild(topBar);
     }
 }
