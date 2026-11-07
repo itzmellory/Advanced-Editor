@@ -2,7 +2,6 @@ package advancedredactor.ui;
 import advancedredactor.LeftSideUtils.*;
 import arc.*;
 import arc.scene.*;
-import arc.scene.event.*;
 import arc.scene.ui.*;
 import arc.scene.ui.layout.*;
 import arc.struct.*;
@@ -18,24 +17,23 @@ public class LeftSideUi{
     public static void init(){
         StencilManager.init();
         Events.run(Trigger.update,()->{
-            if(Vars.ui!=null&&Vars.ui.editor!=null){
-                if(!Vars.ui.editor.isShown()){
-                    hookedBrushTables.clear();
-                    hookedMidTables.clear();
-                }else{
-                    injectLeftControls(Vars.ui.editor);
-                }
+            if(Vars.ui==null||Vars.ui.editor==null)return;
+            if(!Vars.ui.editor.isShown()){
+                hookedBrushTables.clear();
+                hookedMidTables.clear();
+                return;
             }
+            injectLeftControls(Vars.ui.editor);
         });
     }
     private static void injectLeftControls(Element root){
         if(root instanceof Slider){
-            Slider sl=(Slider)root;
-            if(Math.abs(sl.getMaxValue()-(MapEditor.brushSizes.length-1))<0.1f&&sl.parent instanceof Stack&&sl.parent.parent instanceof Table){
-                Table brushTable=(Table)sl.parent.parent;
+            Slider slider=(Slider)root;
+            if(Math.abs(slider.getMaxValue()-(MapEditor.brushSizes.length-1))<0.1f&&slider.parent instanceof Stack&&slider.parent.parent instanceof Table){
+                Table brushTable=(Table)slider.parent.parent;
                 if(!hookedBrushTables.contains(brushTable)){
                     hookedBrushTables.add(brushTable);
-                    rebuildBrushBox(brushTable,(Stack)sl.parent,sl);
+                    rebuildBrushBox(brushTable,(Stack)slider.parent,slider);
                 }
                 if(brushTable.parent instanceof Table){
                     Table midTable=(Table)brushTable.parent;
@@ -48,35 +46,38 @@ public class LeftSideUi{
             }
         }
         if(root instanceof Group){
-            for(Element e:((Group)root).getChildren())injectLeftControls(e);
+            Seq<Element> children=((Group)root).getChildren();
+            for(int i=0;i<children.size;i++)injectLeftControls(children.get(i));
         }
     }
     private static void rebuildBrushBox(Table parent,Stack stack,Slider slider){
         try{
             Seq<Element> saved=new Seq<>();
-            for(Element e:parent.getChildren())saved.add(e);
+            for(Element element:parent.getChildren())saved.add(element);
             parent.clearChildren();
             for(int i=0;i<saved.size;i++){
-                Element el=saved.get(i);
-                if(el==stack){
-                    parent.add(el).growX().row();
+                Element element=saved.get(i);
+                if(element==stack){
+                    parent.add(element).growX().row();
                     Table inputBox=new Table();
                     inputBox.left();
                     inputBox.add(Core.bundle.get("editor.brushsize.input","Brush:")).style(Styles.outlineLabel).padRight(4f);
                     TextField field=new TextField(Strings.fixed(Vars.editor.brushSize,1));
                     field.setFilter((f,c)->Character.isDigit(c)||c=='.');
                     field.changed(()->{
-                        float val=Strings.parseFloat(field.getText(),-1f);
-                        if(val>=1f&&val<=500f)Vars.editor.brushSize=val;
+                        float value=Strings.parseFloat(field.getText(),-1f);
+                        if(value>=1f&&value<=500f)Vars.editor.brushSize=value;
                     });
-                    slider.moved(v->{
-                        int idx=Math.max(0,Math.min(MapEditor.brushSizes.length-1,(int)v));
-                        Vars.editor.brushSize=MapEditor.brushSizes[idx];
+                    slider.moved(value->{
+                        int index=Math.max(0,Math.min(MapEditor.brushSizes.length-1,(int)value));
+                        Vars.editor.brushSize=MapEditor.brushSizes[index];
                         field.setText(Strings.fixed(Vars.editor.brushSize,1));
                     });
                     inputBox.add(field).width(80f).height(32f);
                     parent.add(inputBox).growX().row();
-                }else parent.add(el).growX().row();
+                }else{
+                    parent.add(element).growX().row();
+                }
             }
         }catch(Exception ignored){}
     }
@@ -92,38 +93,37 @@ public class LeftSideUi{
     }
     private static void wrapLeftPanelScroll(MapEditorDialog dialog,Table target){
         try{
-            Element curr=target;
+            Element current=target;
             Table leftColumn=null;
-            while(curr!=null&&curr!=dialog){
-                if(curr.parent instanceof Table&&((Table)curr.parent).getChildren().contains(dialog.getView(),true)){
-                    if(curr instanceof Table)leftColumn=(Table)curr;
+            while(current!=null&&current!=dialog){
+                if(current.parent instanceof Table&&((Table)current.parent).getChildren().contains(dialog.getView(),true)){
+                    if(current instanceof Table)leftColumn=(Table)current;
                     break;
                 }
-                curr=curr.parent;
+                current=current.parent;
             }
-            if(leftColumn!=null&&!"ar-scroll-wrapped".equals(leftColumn.name)){
-                leftColumn.name="ar-scroll-wrapped";
-                Group parent=leftColumn.parent;
-                if(parent instanceof Table){
-                    Table pt=(Table)parent;
-                    SnapshotSeq<Element> seq=new SnapshotSeq<>(pt.getChildren());
-                    pt.clearChildren();
-                    for(Element el:seq){
-                        if(el==leftColumn){
-                            ScrollPane sp=new ScrollPane(leftColumn,Styles.noBarPane);
-                            sp.setScrollingDisabled(true,false);
-                            sp.setOverscroll(false,false);
-                            sp.addListener(new InputListener(){
-                                @Override public void enter(InputEvent event,float x,float y,int pointer,Element fromActor){Core.scene.setScrollFocus(sp);}
-                                @Override public void exit(InputEvent event,float x,float y,int pointer,Element toActor){if(Core.scene.getScrollFocus()==sp)Core.scene.setScrollFocus(null);}
-                            });
-                            pt.add(sp).left().growY();
-                        }else if(el==dialog.getView()){
-                            pt.add(el).grow();
-                        }else{
-                            pt.add(el).growY();
-                        }
-                    }
+            if(leftColumn==null||"ar-scroll-wrapped".equals(leftColumn.name))return;
+            leftColumn.name="ar-scroll-wrapped";
+            Group parent=leftColumn.parent;
+            if(!(parent instanceof Table))return;
+            Table parentTable=(Table)parent;
+            float panelWidth=Math.min(280f,Math.max(190f,Core.graphics.getWidth()*0.24f));
+            Seq<Element> children=new Seq<>();
+            for(Element element:parentTable.getChildren())children.add(element);
+            parentTable.clearChildren();
+            for(Element element:children){
+                if(element==leftColumn){
+                    element.setWidth(panelWidth);
+                    ScrollPane scroll=new ScrollPane(leftColumn,Styles.pane);
+                    scroll.setScrollingDisabled(true,false);
+                    scroll.setOverscroll(false,false);
+                    scroll.setFadeScrollBars(false);
+                    scroll.setForceScroll(false,true);
+                    parentTable.add(scroll).growY().top().left().width(panelWidth).maxWidth(panelWidth);
+                }else if(element==dialog.getView()){
+                    parentTable.add(element).grow();
+                }else{
+                    parentTable.add(element).growY();
                 }
             }
         }catch(Throwable ignored){}
