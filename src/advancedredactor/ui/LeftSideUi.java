@@ -2,6 +2,7 @@ package advancedredactor.ui;
 import advancedredactor.LeftSideUtils.*;
 import arc.*;
 import arc.scene.*;
+import arc.scene.event.*;
 import arc.scene.ui.*;
 import arc.scene.ui.layout.*;
 import arc.struct.*;
@@ -112,7 +113,11 @@ public class LeftSideUi{
                             ScrollPane sp=new ScrollPane(leftColumn,Styles.noBarPane);
                             sp.setScrollingDisabled(true,false);
                             sp.setOverscroll(false,false);
-                            pt.add(sp).growY().left().width(80f);
+                            sp.addListener(new InputListener(){
+                                @Override public void enter(InputEvent event,float x,float y,int pointer,Element fromActor){Core.scene.setScrollFocus(sp);}
+                                @Override public void exit(InputEvent event,float x,float y,int pointer,Element toActor){if(Core.scene.getScrollFocus()==sp)Core.scene.setScrollFocus(null);}
+                            });
+                            pt.add(sp).left().growY();
                         }else if(el==dialog.getView()){
                             pt.add(el).grow();
                         }else{
