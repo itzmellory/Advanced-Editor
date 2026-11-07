@@ -2,6 +2,7 @@ package advancedredactor.ui;
 import arc.*;
 import arc.scene.*;
 import arc.scene.event.*;
+import arc.scene.event.*;
 import arc.scene.ui.*;
 import arc.scene.ui.layout.*;
 import mindustry.*;
@@ -29,17 +30,17 @@ public class UpperUi{
         }
         MapView view=Vars.ui.editor.getView();
         if(view==null||view.parent==null)return;
-        if(topBar==null||topBar.parent!=view.parent||lastView!=view)buildTopBar(view);
+        if(topBar==null||topBar.parent!=view||lastView!=view)buildTopBar(view);
     }
     private static void buildTopBar(MapView view){
         if(topBar!=null)topBar.remove();
         lastView=view;
-        Group parent=view.parent;
-        float screenWidth=Core.graphics.getWidth();
-        float availableWidth=Math.max(1f,screenWidth-16f);
+        Group parent=view;
+        float availableWidth=Math.max(1f,view.getWidth()-8f);
+        if(view.getWidth()<=0f)availableWidth=Math.max(1f,Core.graphics.getWidth()*0.65f);
         int shapeCount=BrushShape.values().length;
         int buttonCount=8+shapeCount+1;
-        float buttonSize=Math.max(22f,Math.min(42f,(availableWidth-36f)/buttonCount));
+        float buttonSize=Math.max(18f,Math.min(42f,(availableWidth-24f)/buttonCount));
         float buttonHeight=Math.max(24f,Math.min(42f,buttonSize));
         float padding=Math.max(0f,buttonSize/21f);
         topBar=new Table();
@@ -76,10 +77,10 @@ public class UpperUi{
         }).tooltip(Core.bundle.get("upper.line45","Strict 45° Line Mode")).size(buttonSize*1.2f,buttonHeight).get();
         angleButton.update(()->angleButton.setChecked(CustomShapeManager.line45Mode));
         ScrollPane pane=new ScrollPane(bar,Styles.noBarPane);
-        pane.setScrollingDisabled(true,true);
+        pane.setScrollingDisabled(false,true);
         pane.setOverscroll(false,false);
         pane.setFadeScrollBars(false);
-        topBar.add(pane).width(availableWidth).padTop(4f).center();
+        topBar.add(pane).width(availableWidth).maxWidth(availableWidth).padTop(4f).center();
         parent.addChild(topBar);
     }
 }
