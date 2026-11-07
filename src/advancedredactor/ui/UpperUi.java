@@ -74,7 +74,7 @@ public class UpperUi{
         ScrollPane pane=new ScrollPane(bar);
         pane.setScrollingDisabled(false,true);
         pane.setOverscroll(false,false);
-        topBar.add(pane).padTop(6f).maxWidth(Core.graphics.getWidth()*0.72f);
+        topBar.add(pane).padTop(6f).maxWidth(Core.graphics.getWidth()*0.9f);
         parent.addChild(topBar);
     }
 }
