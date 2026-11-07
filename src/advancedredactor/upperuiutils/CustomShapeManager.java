@@ -25,15 +25,15 @@ public class CustomShapeManager{
     private static final Vec2 tmpA=new Vec2(),tmpB=new Vec2();
     public static boolean inside(int dx,int dy,float radius,BrushShape shape){
         if(radius<=1f)return dx==0&&dy==0;
-        switch(shape){
-            case square:return Math.abs(dx)<=radius-0.5f&&Math.abs(dy)<=radius-0.5f;
-            case diamond:return Math.abs(dx)+Math.abs(dy)<=radius;
-            case cross:{
+        return switch(shape){
+            case square->Math.abs(dx)<=radius-0.5f&&Math.abs(dy)<=radius-0.5f;
+            case diamond->Math.abs(dx)+Math.abs(dy)<=radius;
+            case cross->{
                 float arm=Math.max(0f,(radius-1f)/3f);
-                return(Math.abs(dx)<=arm&&Math.abs(dy)<=radius)||(Math.abs(dy)<=arm&&Math.abs(dx)<=radius);
+                yield(Math.abs(dx)<=arm&&Math.abs(dy)<=radius)||(Math.abs(dy)<=arm&&Math.abs(dx)<=radius);
             }
-            default:return Mathf.within(dx,dy,radius-0.5f+0.0001f);
-        }
+            default->Mathf.within(dx,dy,radius-0.5f+0.0001f);
+        };
     }
     public static void iterateBrush(int cx,int cy,float radius,BrushShape shape,Cons<Tile> cons){
         int clamped=Math.max(1,(int)Math.ceil(radius));
@@ -43,7 +43,7 @@ public class CustomShapeManager{
                 if(inside(rx,ry,radius,shape)){
                     int wx=cx+rx,wy=cy+ry;
                     if(wx>=0&&wy>=0&&wx<w&&wy<h){
-                        Tile t=Vars.editor.tile(wx,wy);
+                        var t=Vars.editor.tile(wx,wy);
                         if(t!=null)cons.get(t);
                     }
                 }
@@ -117,8 +117,8 @@ public class CustomShapeManager{
     }
     public static void drawMaskEdges(MapView view,Element overlay,IntSet mask){
         try{
-            Vec2 o0=LandCopyPast.tileToOverlay(view,overlay,0f,0f,tmpA);
-            Vec2 o1=LandCopyPast.tileToOverlay(view,overlay,1f,1f,tmpB);
+            var o0=LandCopyPast.tileToOverlay(view,overlay,0f,0f,tmpA);
+            var o1=LandCopyPast.tileToOverlay(view,overlay,1f,1f,tmpB);
             float x0=o0.x,y0=o0.y;
             float tileW=o1.x-x0,tileH=o1.y-y0;
             if(Math.abs(tileW)<=0.0001f||Math.abs(tileH)<=0.0001f)return;
