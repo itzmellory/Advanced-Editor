@@ -34,6 +34,7 @@ public class UpperUi{
             lastView=view;
             buildTopBar(view);
         }
+        if(topBar!=null)topBar.toFront();
     }
     private static void buildTopBar(MapView view){
         if(topBar!=null)topBar.remove();
@@ -74,7 +75,7 @@ public class UpperUi{
         ScrollPane pane=new ScrollPane(bar);
         pane.setScrollingDisabled(false,true);
         pane.setOverscroll(false,false);
-        topBar.add(pane).padTop(6f).growX().padLeft(10f).padRight(10f);
+        topBar.add(pane).padTop(6f).growX().padLeft(90f).padRight(10f);
         parent.addChild(topBar);
     }
-}
+                                                }
