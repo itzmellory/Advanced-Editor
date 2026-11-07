@@ -114,7 +114,7 @@ public class LeftSideUi{
             for(Element element:children){
                 if(element==leftColumn){
                     element.setWidth(panelWidth);
-                    ScrollPane scroll=new ScrollPane(leftColumn,Styles.pane);
+                    ScrollPane scroll=new ScrollPane(leftColumn,Styles.noBarPane);
                     scroll.setScrollingDisabled(true,false);
                     scroll.setOverscroll(false,false);
                     scroll.setFadeScrollBars(false);
