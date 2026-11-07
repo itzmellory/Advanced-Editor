@@ -1,10 +1,8 @@
 package advancedredactor.ui;
 import arc.*;
 import arc.scene.*;
-import arc.scene.event.*;
 import arc.scene.ui.*;
 import arc.scene.ui.layout.*;
-import arc.util.*;
 import mindustry.*;
 import mindustry.editor.*;
 import mindustry.game.EventType.*;
@@ -30,22 +28,26 @@ public class UpperUi{
         }
         MapView view=Vars.ui.editor.getView();
         if(view==null||view.parent==null)return;
-        if(topBar==null||topBar.parent!=view.parent||lastView!=view){
-            lastView=view;
-            buildTopBar(view);
-        }
-        if(topBar!=null)topBar.toFront();
+        if(topBar==null||topBar.parent!=view.parent||lastView!=view)buildTopBar(view);
     }
     private static void buildTopBar(MapView view){
         if(topBar!=null)topBar.remove();
+        lastView=view;
         Group parent=view.parent;
+        float screenWidth=Core.graphics.getWidth();
+        float availableWidth=Math.max(1f,screenWidth-16f);
+        int shapeCount=BrushShape.values().length;
+        int buttonCount=8+shapeCount+1;
+        float buttonSize=Math.max(22f,Math.min(42f,(availableWidth-36f)/buttonCount));
+        float buttonHeight=Math.max(24f,Math.min(42f,buttonSize));
+        float padding=Math.max(0f,buttonSize/21f);
         topBar=new Table();
         topBar.setFillParent(true);
         topBar.top();
         topBar.touchable=Touchable.childrenOnly;
         Table bar=new Table(Tex.button);
-        bar.margin(4f);
-        bar.defaults().size(42f,42f).pad(2f);
+        bar.margin(Math.max(2f,buttonSize*0.095f));
+        bar.defaults().size(buttonSize,buttonHeight).pad(padding);
         ImageButton copyBtn=bar.button(Icon.copy,Styles.squareTogglei,()->LandCopyPast.toggleMode(Mode.copy)).tooltip(Core.bundle.get("upper.copy","Copy Terrain")).get();
         copyBtn.update(()->copyBtn.setChecked(LandCopyPast.mode==Mode.copy));
         ImageButton cutBtn=bar.button(Icon.trash,Styles.squareTogglei,()->LandCopyPast.toggleMode(Mode.cut)).tooltip(Core.bundle.get("upper.cut","Cut Terrain")).get();
@@ -58,24 +60,25 @@ public class UpperUi{
         bar.button(Icon.flipY,Styles.flati,LandCopyPast::flipY).tooltip(Core.bundle.get("upper.flipy","Flip Y")).disabled(b->LandCopyPast.clipboard==null);
         bar.button(Icon.save,Styles.flati,TerrainSchematicsDialog::show).tooltip(Core.bundle.get("upper.schematics","Terrain Schematics"));
         bar.button(Icon.settings,Styles.flati,LandCopyPast::showCopyPasteSettings).tooltip(Core.bundle.get("upper.settings","Copy/Paste Options"));
-        bar.image(Tex.whiteui).width(2f).height(34f).padLeft(4f).padRight(4f);
-        for(BrushShape sh:BrushShape.values()){
-            TextButton sb=bar.button(sh.symbol,Styles.flatTogglet,()->CustomShapeManager.currentShape=sh).tooltip(sh.title).size(42f,42f).get();
-            sb.update(()->sb.setChecked(CustomShapeManager.currentShape==sh));
+        bar.image(Tex.whiteui).width(Math.max(1f,buttonSize*0.045f)).height(buttonHeight*0.8f).padLeft(padding).padRight(padding);
+        for(BrushShape shape:BrushShape.values()){
+            TextButton shapeButton=bar.button(shape.symbol,Styles.flatTogglet,()->CustomShapeManager.currentShape=shape).tooltip(shape.title).size(buttonSize,buttonHeight).get();
+            shapeButton.update(()->shapeButton.setChecked(CustomShapeManager.currentShape==shape));
         }
-        bar.image(Tex.whiteui).width(2f).height(34f).padLeft(4f).padRight(4f);
-        TextButton degBtn=bar.button("45°",Styles.flatTogglet,()->{
+        bar.image(Tex.whiteui).width(Math.max(1f,buttonSize*0.045f)).height(buttonHeight*0.8f).padLeft(padding).padRight(padding);
+        TextButton angleButton=bar.button("45°",Styles.flatTogglet,()->{
             CustomShapeManager.line45Mode=!CustomShapeManager.line45Mode;
             if(CustomShapeManager.line45Mode){
                 LandCopyPast.setMode(Mode.none);
                 view.setTool(EditorTool.line);
             }
-        }).tooltip(Core.bundle.get("upper.line45","Strict 45° Line Mode")).size(52f,42f).get();
-        degBtn.update(()->degBtn.setChecked(CustomShapeManager.line45Mode));
-        ScrollPane pane=new ScrollPane(bar);
-        pane.setScrollingDisabled(false,true);
+        }).tooltip(Core.bundle.get("upper.line45","Strict 45° Line Mode")).size(buttonSize*1.2f,buttonHeight).get();
+        angleButton.update(()->angleButton.setChecked(CustomShapeManager.line45Mode));
+        ScrollPane pane=new ScrollPane(bar,Styles.noBarPane);
+        pane.setScrollingDisabled(true,true);
         pane.setOverscroll(false,false);
-        topBar.add(pane).padTop(6f).growX().padLeft(90f).padRight(10f);
+        pane.setFadeScrollBars(false);
+        topBar.add(pane).width(availableWidth).padTop(4f).center();
         parent.addChild(topBar);
     }
-                                                }
+}
