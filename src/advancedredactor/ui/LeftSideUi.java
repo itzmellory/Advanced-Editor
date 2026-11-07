@@ -40,7 +40,7 @@ public class LeftSideUi{
                     if(!hookedMidTables.contains(midTable)){
                         hookedMidTables.add(midTable);
                         appendBottomUtils(midTable);
-                        wrapLeftPanelScroll(Vars.ui.editor,midTable);
+                        wrapLeftPanelScroll(midTable);
                     }
                 }
             }
@@ -91,39 +91,26 @@ public class LeftSideUi{
             mid.add(utils).growX().row();
         }catch(Exception ignored){}
     }
-    private static void wrapLeftPanelScroll(MapEditorDialog dialog,Table target){
+    private static void wrapLeftPanelScroll(Table target){
         try{
-            Element current=target;
-            Table leftColumn=null;
-            while(current!=null&&current!=dialog){
-                if(current.parent instanceof Table&&((Table)current.parent).getChildren().contains(dialog.getView(),true)){
-                    if(current instanceof Table)leftColumn=(Table)current;
-                    break;
-                }
-                current=current.parent;
-            }
-            if(leftColumn==null||"ar-scroll-wrapped".equals(leftColumn.name))return;
-            leftColumn.name="ar-scroll-wrapped";
-            Group parent=leftColumn.parent;
-            if(!(parent instanceof Table))return;
-            Table parentTable=(Table)parent;
-            float panelWidth=Math.min(280f,Math.max(190f,Core.graphics.getWidth()*0.24f));
+            if(target==null||!(target.parent instanceof Table)||"ar-scroll-wrapped".equals(target.name))return;
+            Table parent=(Table)target.parent;
+            target.name="ar-scroll-wrapped";
+            float width=target.getWidth();
+            if(width<=0f)width=Math.min(280f,Math.max(180f,Core.graphics.getWidth()*0.23f));
             Seq<Element> children=new Seq<>();
-            for(Element element:parentTable.getChildren())children.add(element);
-            parentTable.clearChildren();
+            for(Element element:parent.getChildren())children.add(element);
+            parent.clearChildren();
             for(Element element:children){
-                if(element==leftColumn){
-                    element.setWidth(panelWidth);
-                    ScrollPane scroll=new ScrollPane(leftColumn,Styles.noBarPane);
+                if(element==target){
+                    ScrollPane scroll=new ScrollPane(target,Styles.noBarPane);
                     scroll.setScrollingDisabled(true,false);
                     scroll.setOverscroll(false,false);
                     scroll.setFadeScrollBars(false);
                     scroll.setForceScroll(false,true);
-                    parentTable.add(scroll).growY().top().left().width(panelWidth).maxWidth(panelWidth);
-                }else if(element==dialog.getView()){
-                    parentTable.add(element).grow();
+                    parent.add(scroll).growY().top().left().width(width).maxWidth(width);
                 }else{
-                    parentTable.add(element).growY();
+                    parent.add(element).growY();
                 }
             }
         }catch(Throwable ignored){}
