@@ -21,74 +21,46 @@ public class UpperUi{
     }
     private static void update(){
         if(Vars.ui==null||Vars.ui.editor==null||!Vars.ui.editor.isShown()){
-            if(topBar!=null){
-                topBar.remove();
-                topBar=null;
-            }
-            lastView=null;
-            lastWidth=-1f;
+            removeTopBar();
             return;
         }
         MapView view=Vars.ui.editor.getView();
-        if(view==null||view.parent==null)return;
-        float[] bounds=getMapBounds(view);
-        float width=Math.max(1f,bounds[2]-bounds[0]);
-        if(topBar==null||topBar.parent!=view.parent||lastView!=view||Math.abs(lastWidth-width)>2f){
+        if(view==null||view.parent==null||view.getWidth()<=0f||view.getHeight()<=0f)return;
+        float width=view.getWidth();
+        if(topBar==null||topBar.parent!=view.parent||lastView!=view||Math.abs(lastWidth-width)>1f){
             buildTopBar(view,width);
-            lastWidth=width;
         }
-        if(topBar!=null){
-            float offset=Math.max(72f,Core.graphics.getHeight()*0.085f);
-            topBar.setSize(width,topBar.getHeight());
-            topBar.setPosition(bounds[0],bounds[1]+view.getHeight()-topBar.getHeight()-offset);
-        }
+        positionTopBar(view);
     }
-    private static float[] getMapBounds(MapView view){
-        float left=view.x;
-        float right=view.x+view.getWidth();
-        float bottom=view.y;
-        float top=view.y+view.getHeight();
-        Group parent=view.parent;
-        float center=(left+right)/2f;
-        for(Element element:parent.getChildren()){
-            if(element==view||element==topBar||!element.visible)continue;
-            float ew=element.getWidth();
-            float eh=element.getHeight();
-            if(ew<=0f||eh<=0f||ew>view.getWidth()*0.45f||eh<view.getHeight()*0.35f)continue;
-            float ex=element.x;
-            float ey=element.y;
-            if(ey+eh<=bottom||ey>=top)continue;
-            float elementCenter=ex+ew/2f;
-            if(elementCenter<center&&ex+ew>left&&ex<center+view.getWidth()*0.05f){
-                left=Math.max(left,ex+ew);
-            }else if(elementCenter>=center&&ex<right&&ex+ew>center-view.getWidth()*0.05f){
-                right=Math.min(right,ex);
-            }
+    private static void removeTopBar(){
+        if(topBar!=null){
+            topBar.remove();
+            topBar=null;
         }
-        float inset=6f;
-        left+=inset;
-        right-=inset;
-        if(right-left<80f){
-            left=view.x+6f;
-            right=view.x+view.getWidth()-6f;
-        }
-        return new float[]{left,bottom,right,top};
+        lastView=null;
+        lastWidth=-1f;
+    }
+    private static void positionTopBar(MapView view){
+        if(topBar==null||topBar.parent==null)return;
+        topBar.setSize(view.getWidth(),topBar.getHeight());
+        topBar.setPosition(view.x,view.y+view.getHeight()-topBar.getHeight()-6f);
+        topBar.toFront();
     }
     private static void buildTopBar(MapView view,float availableWidth){
         if(topBar!=null)topBar.remove();
         lastView=view;
+        lastWidth=availableWidth;
         Group parent=view.parent;
         int shapeCount=BrushShape.values().length;
         int buttonCount=10+shapeCount;
-        float buttonSize=Math.max(18f,Math.min(42f,(availableWidth-28f)/buttonCount));
-        float buttonHeight=Math.max(24f,Math.min(42f,buttonSize));
-        float padding=Math.max(0f,buttonSize/21f);
+        float buttonSize=Math.max(24f,Math.min(42f,(availableWidth-28f)/buttonCount));
+        float buttonHeight=Math.max(26f,Math.min(42f,buttonSize));
+        float padding=Math.max(1f,buttonSize/28f);
         topBar=new Table();
         topBar.setFillParent(false);
-        topBar.top();
         topBar.touchable=Touchable.childrenOnly;
         Table bar=new Table(Tex.button);
-        bar.margin(Math.max(2f,buttonSize*0.095f));
+        bar.margin(Math.max(2f,buttonSize*0.08f));
         bar.defaults().size(buttonSize,buttonHeight).pad(padding);
         ImageButton copyBtn=bar.button(Icon.copy,Styles.squareTogglei,()->LandCopyPast.toggleMode(Mode.copy)).tooltip(Core.bundle.get("upper.copy","Copy Terrain")).get();
         copyBtn.update(()->copyBtn.setChecked(LandCopyPast.mode==Mode.copy));
@@ -102,12 +74,12 @@ public class UpperUi{
         bar.button(Icon.flipY,Styles.flati,LandCopyPast::flipY).tooltip(Core.bundle.get("upper.flipy","Flip Y")).disabled(b->LandCopyPast.clipboard==null);
         bar.button(Icon.save,Styles.flati,TerrainSchematicsDialog::show).tooltip(Core.bundle.get("upper.schematics","Terrain Schematics"));
         bar.button(Icon.settings,Styles.flati,LandCopyPast::showCopyPasteSettings).tooltip(Core.bundle.get("upper.settings","Copy/Paste Options"));
-        bar.image(Tex.whiteui).width(Math.max(1f,buttonSize*0.045f)).height(buttonHeight*0.8f).padLeft(padding).padRight(padding);
+        bar.image(Tex.whiteui).width(2f).height(buttonHeight*0.8f).padLeft(padding).padRight(padding);
         for(BrushShape shape:BrushShape.values()){
             TextButton shapeButton=bar.button(shape.symbol,Styles.flatTogglet,()->CustomShapeManager.currentShape=shape).tooltip(shape.title).size(buttonSize,buttonHeight).get();
             shapeButton.update(()->shapeButton.setChecked(CustomShapeManager.currentShape==shape));
         }
-        bar.image(Tex.whiteui).width(Math.max(1f,buttonSize*0.045f)).height(buttonHeight*0.8f).padLeft(padding).padRight(padding);
+        bar.image(Tex.whiteui).width(2f).height(buttonHeight*0.8f).padLeft(padding).padRight(padding);
         TextButton angleButton=bar.button("45°",Styles.flatTogglet,()->{
             CustomShapeManager.line45Mode=!CustomShapeManager.line45Mode;
             if(CustomShapeManager.line45Mode){
@@ -120,9 +92,9 @@ public class UpperUi{
         pane.setScrollingDisabled(false,true);
         pane.setOverscroll(false,false);
         pane.setFadeScrollBars(false);
-        topBar.add(pane).width(availableWidth).maxWidth(availableWidth).padTop(4f).left();
+        topBar.add(pane).width(availableWidth).maxWidth(availableWidth).padTop(2f).left();
         topBar.pack();
-        topBar.setSize(availableWidth,topBar.getHeight());
         parent.addChild(topBar);
+        positionTopBar(view);
     }
 }
