@@ -33,7 +33,7 @@ public class UpperUi{
         if(topBar==null||topBar.parent!=view.parent||lastView!=view)buildTopBar(view);
         if(topBar!=null){
             topBar.setSize(view.getWidth(),topBar.getHeight());
-            topBar.setPosition(view.x,view.y+view.getHeight()-topBar.getHeight());
+            topBar.setPosition(view.x,view.y+view.getHeight()-topBar.getHeight()-64f);
         }
     }
     private static void buildTopBar(MapView view){
@@ -87,7 +87,7 @@ public class UpperUi{
         topBar.add(pane).width(availableWidth).maxWidth(availableWidth).padTop(4f).center();
         topBar.pack();
         topBar.setSize(view.getWidth(),topBar.getHeight());
-        topBar.setPosition(view.x,view.y+view.getHeight()-topBar.getHeight());
+        topBar.setPosition(view.x,view.y+view.getHeight()-topBar.getHeight()-64f);
         parent.addChild(topBar);
     }
 }
