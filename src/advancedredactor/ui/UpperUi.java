@@ -4,6 +4,7 @@ import arc.scene.*;
 import arc.scene.event.*;
 import arc.scene.ui.*;
 import arc.scene.ui.layout.*;
+import arc.math.geom.Vec2;
 import mindustry.*;
 import mindustry.editor.*;
 import mindustry.game.EventType.*;
@@ -26,11 +27,12 @@ public class UpperUi{
         }
         MapView view=Vars.ui.editor.getView();
         if(view==null||view.parent==null||view.getWidth()<=0f||view.getHeight()<=0f)return;
-        float width=Math.max(1f,view.getWidth()-24f);
-        if(topBar==null||topBar.parent!=view.parent||lastView!=view||Math.abs(lastWidth-width)>1f){
+        float[] bounds=getViewBounds(view,Vars.ui.editor);
+        float width=Math.max(1f,bounds[2]-bounds[0]-24f);
+        if(topBar==null||topBar.parent!=Vars.ui.editor||lastView!=view||Math.abs(lastWidth-width)>1f){
             buildTopBar(view,width);
         }
-        positionTopBar(view);
+        positionTopBar(view,Vars.ui.editor,bounds);
     }
     private static void removeTopBar(){
         if(topBar!=null){
@@ -40,18 +42,26 @@ public class UpperUi{
         lastView=null;
         lastWidth=-1f;
     }
-    private static void positionTopBar(MapView view){
+    private static float[] getViewBounds(MapView view,MapEditorDialog editor){
+        Vec2 bottomLeft=view.localToStageCoordinates(new Vec2(0f,0f));
+        Vec2 topRight=view.localToStageCoordinates(new Vec2(view.getWidth(),view.getHeight()));
+        editor.stageToLocalCoordinates(bottomLeft);
+        editor.stageToLocalCoordinates(topRight);
+        return new float[]{bottomLeft.x,bottomLeft.y,topRight.x,topRight.y};
+    }
+    private static void positionTopBar(MapView view,MapEditorDialog editor,float[] bounds){
         if(topBar==null||topBar.parent==null)return;
         float inset=12f;
-        topBar.setSize(Math.max(1f,view.getWidth()-inset*2f),topBar.getHeight());
-        topBar.setPosition(view.x+inset,view.y+view.getHeight()-topBar.getHeight()-6f);
+        float width=Math.max(1f,bounds[2]-bounds[0]-inset*2f);
+        topBar.setSize(width,topBar.getHeight());
+        topBar.setPosition(bounds[0]+inset,bounds[3]-topBar.getHeight()-6f);
         topBar.toFront();
     }
     private static void buildTopBar(MapView view,float availableWidth){
         if(topBar!=null)topBar.remove();
         lastView=view;
         lastWidth=availableWidth;
-        Group parent=view.parent;
+        Group parent=Vars.ui.editor;
         int shapeCount=BrushShape.values().length;
         int buttonCount=10+shapeCount;
         float buttonSize=Math.max(12f,Math.min(42f,(availableWidth-40f)/buttonCount));
@@ -96,6 +106,6 @@ public class UpperUi{
         topBar.add(pane).width(availableWidth).maxWidth(availableWidth).padTop(2f).left();
         topBar.pack();
         parent.addChild(topBar);
-        positionTopBar(view);
+        positionTopBar(view,Vars.ui.editor,getViewBounds(view,Vars.ui.editor));
     }
 }
