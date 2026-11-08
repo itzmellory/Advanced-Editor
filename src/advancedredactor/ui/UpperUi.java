@@ -26,7 +26,7 @@ public class UpperUi{
         }
         MapView view=Vars.ui.editor.getView();
         if(view==null||view.parent==null||view.getWidth()<=0f||view.getHeight()<=0f)return;
-        float width=view.getWidth();
+        float width=Math.max(1f,view.getWidth()-24f);
         if(topBar==null||topBar.parent!=view.parent||lastView!=view||Math.abs(lastWidth-width)>1f){
             buildTopBar(view,width);
         }
@@ -42,8 +42,9 @@ public class UpperUi{
     }
     private static void positionTopBar(MapView view){
         if(topBar==null||topBar.parent==null)return;
-        topBar.setSize(view.getWidth(),topBar.getHeight());
-        topBar.setPosition(view.x,view.y+view.getHeight()-topBar.getHeight()-6f);
+        float inset=12f;
+        topBar.setSize(Math.max(1f,view.getWidth()-inset*2f),topBar.getHeight());
+        topBar.setPosition(view.x+inset,view.y+view.getHeight()-topBar.getHeight()-6f);
         topBar.toFront();
     }
     private static void buildTopBar(MapView view,float availableWidth){
@@ -53,8 +54,8 @@ public class UpperUi{
         Group parent=view.parent;
         int shapeCount=BrushShape.values().length;
         int buttonCount=10+shapeCount;
-        float buttonSize=Math.max(24f,Math.min(42f,(availableWidth-28f)/buttonCount));
-        float buttonHeight=Math.max(26f,Math.min(42f,buttonSize));
+        float buttonSize=Math.max(12f,Math.min(42f,(availableWidth-40f)/buttonCount));
+        float buttonHeight=Math.max(18f,Math.min(42f,buttonSize));
         float padding=Math.max(1f,buttonSize/28f);
         topBar=new Table();
         topBar.setFillParent(false);
