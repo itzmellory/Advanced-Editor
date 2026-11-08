@@ -95,24 +95,18 @@ public class LeftSideUi{
         try{
             if(target==null||!(target.parent instanceof Table)||"ar-scroll-wrapped".equals(target.name))return;
             Table parent=(Table)target.parent;
+            Cell cell=parent.getCell(target);
+            if(cell==null)return;
             target.name="ar-scroll-wrapped";
-            float width=target.getWidth();
-            if(width<=0f)width=Math.min(280f,Math.max(180f,Core.graphics.getWidth()*0.23f));
-            Seq<Element> children=new Seq<>();
-            for(Element element:parent.getChildren())children.add(element);
-            parent.clearChildren();
-            for(Element element:children){
-                if(element==target){
-                    ScrollPane scroll=new ScrollPane(target,Styles.noBarPane);
-                    scroll.setScrollingDisabled(true,false);
-                    scroll.setOverscroll(false,false);
-                    scroll.setFadeScrollBars(false);
-                    scroll.setForceScroll(false,true);
-                    parent.add(scroll).growY().top().left().width(width).maxWidth(width);
-                }else{
-                    parent.add(element).growY();
-                }
-            }
+            ScrollPane scroll=new ScrollPane(null,Styles.noBarPane);
+            scroll.setScrollingDisabled(true,false);
+            scroll.setOverscroll(false,false);
+            scroll.setFadeScrollBars(false);
+            scroll.setForceScroll(false,true);
+            cell.setElement(scroll);
+            scroll.setWidget(target);
+            cell.growY().top().left();
+            parent.invalidateHierarchy();
         }catch(Throwable ignored){}
     }
 }
