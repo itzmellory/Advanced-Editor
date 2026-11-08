@@ -2,7 +2,6 @@ package advancedredactor.ui;
 import arc.*;
 import arc.scene.*;
 import arc.scene.event.*;
-import arc.scene.event.*;
 import arc.scene.ui.*;
 import arc.scene.ui.layout.*;
 import mindustry.*;
@@ -16,6 +15,7 @@ import advancedredactor.upperuiutils.CustomShapeManager.*;
 public class UpperUi{
     private static Table topBar;
     private static MapView lastView;
+    private static float lastWidth=-1f;
     public static void init(){
         Events.run(Trigger.update,UpperUi::update);
     }
@@ -26,25 +26,61 @@ public class UpperUi{
                 topBar=null;
             }
             lastView=null;
+            lastWidth=-1f;
             return;
         }
         MapView view=Vars.ui.editor.getView();
         if(view==null||view.parent==null)return;
-        if(topBar==null||topBar.parent!=view.parent||lastView!=view)buildTopBar(view);
+        float[] bounds=getMapBounds(view);
+        float width=Math.max(1f,bounds[2]-bounds[0]);
+        if(topBar==null||topBar.parent!=view.parent||lastView!=view||Math.abs(lastWidth-width)>2f){
+            buildTopBar(view,width);
+            lastWidth=width;
+        }
         if(topBar!=null){
-            topBar.setSize(view.getWidth(),topBar.getHeight());
-            topBar.setPosition(view.x,view.y+view.getHeight()-topBar.getHeight()-64f);
+            float offset=Math.max(72f,Core.graphics.getHeight()*0.085f);
+            topBar.setSize(width,topBar.getHeight());
+            topBar.setPosition(bounds[0],bounds[1]+view.getHeight()-topBar.getHeight()-offset);
         }
     }
-    private static void buildTopBar(MapView view){
+    private static float[] getMapBounds(MapView view){
+        float left=view.x;
+        float right=view.x+view.getWidth();
+        float bottom=view.y;
+        float top=view.y+view.getHeight();
+        Group parent=view.parent;
+        float center=(left+right)/2f;
+        for(Element element:parent.getChildren()){
+            if(element==view||element==topBar||!element.visible)continue;
+            float ew=element.getWidth();
+            float eh=element.getHeight();
+            if(ew<=0f||eh<=0f||ew>view.getWidth()*0.45f||eh<view.getHeight()*0.35f)continue;
+            float ex=element.x;
+            float ey=element.y;
+            if(ey+eh<=bottom||ey>=top)continue;
+            float elementCenter=ex+ew/2f;
+            if(elementCenter<center&&ex+ew>left&&ex<center+view.getWidth()*0.05f){
+                left=Math.max(left,ex+ew);
+            }else if(elementCenter>=center&&ex<right&&ex+ew>center-view.getWidth()*0.05f){
+                right=Math.min(right,ex);
+            }
+        }
+        float inset=6f;
+        left+=inset;
+        right-=inset;
+        if(right-left<80f){
+            left=view.x+6f;
+            right=view.x+view.getWidth()-6f;
+        }
+        return new float[]{left,bottom,right,top};
+    }
+    private static void buildTopBar(MapView view,float availableWidth){
         if(topBar!=null)topBar.remove();
         lastView=view;
         Group parent=view.parent;
-        float availableWidth=Math.max(1f,view.getWidth()-8f);
-        if(view.getWidth()<=0f)availableWidth=Math.max(1f,Core.graphics.getWidth()*0.65f);
         int shapeCount=BrushShape.values().length;
-        int buttonCount=8+shapeCount+1;
-        float buttonSize=Math.max(18f,Math.min(42f,(availableWidth-24f)/buttonCount));
+        int buttonCount=10+shapeCount;
+        float buttonSize=Math.max(18f,Math.min(42f,(availableWidth-28f)/buttonCount));
         float buttonHeight=Math.max(24f,Math.min(42f,buttonSize));
         float padding=Math.max(0f,buttonSize/21f);
         topBar=new Table();
@@ -84,10 +120,9 @@ public class UpperUi{
         pane.setScrollingDisabled(false,true);
         pane.setOverscroll(false,false);
         pane.setFadeScrollBars(false);
-        topBar.add(pane).width(availableWidth).maxWidth(availableWidth).padTop(4f).center();
+        topBar.add(pane).width(availableWidth).maxWidth(availableWidth).padTop(4f).left();
         topBar.pack();
-        topBar.setSize(view.getWidth(),topBar.getHeight());
-        topBar.setPosition(view.x,view.y+view.getHeight()-topBar.getHeight()-64f);
+        topBar.setSize(availableWidth,topBar.getHeight());
         parent.addChild(topBar);
     }
 }
