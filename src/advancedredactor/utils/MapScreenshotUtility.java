@@ -5,6 +5,7 @@ import arc.graphics.*;
 import arc.graphics.gl.*;
 import arc.graphics.g2d.*;
 import arc.util.*;
+import arc.util.Buffers;
 import mindustry.*;
 import java.nio.*;
 import java.text.*;
@@ -28,7 +29,7 @@ public class MapScreenshotUtility{
                 Draw.reset();
                 Vars.editor.renderer.draw(0f,0f,width,height);
                 Draw.flush();
-                ByteBuffer pixels=BufferUtils.newByteBuffer(width*height*4);
+                ByteBuffer pixels=Buffers.newByteBuffer(width*height*4);
                 Core.gl.glReadPixels(0,0,width,height,GL20.GL_RGBA,GL20.GL_UNSIGNED_BYTE,pixels);
                 pixels.position(0);
                 pixmap=new Pixmap(pixels,width,height);
