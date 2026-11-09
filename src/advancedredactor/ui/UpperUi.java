@@ -18,8 +18,6 @@ public class UpperUi{
     private static MapView lastView;
     private static float lastWidth=-1f;
     private static float lastHeight=-1f;
-    private static float lastX=-1f;
-    private static float lastY=-1f;
     public static void init(){
         Events.run(Trigger.update,UpperUi::update);
     }
@@ -32,36 +30,34 @@ public class UpperUi{
         if(view==null||view.parent==null||view.getWidth()<=0f||view.getHeight()<=0f)return;
         float[] bounds=getAvailableBounds(view);
         float width=Math.max(1f,bounds[2]-bounds[0]);
-        float height=view.getHeight();
-        if(topBar==null||topBar.parent!=view.parent||lastView!=view||Math.abs(lastWidth-width)>1f||Math.abs(lastHeight-height)>1f)buildTopBar(view,width);
+        if(topBar==null||topBar.parent!=view.parent||lastView!=view||Math.abs(lastWidth-width)>1f||Math.abs(lastHeight-view.getHeight())>1f)buildTopBar(view,width);
         positionTopBar(view,bounds);
     }
     private static float[] getAvailableBounds(MapView view){
-        Vec2 bottom=view.localToStageCoordinates(new Vec2(0f,0f));
-        Vec2 top=view.localToStageCoordinates(new Vec2(view.getWidth(),view.getHeight()));
-        float left=bottom.x;
-        float right=top.x;
+        Vec2 viewBottom=view.localToStageCoordinates(new Vec2(0f,0f));
+        Vec2 viewTop=view.localToStageCoordinates(new Vec2(view.getWidth(),view.getHeight()));
+        float left=viewBottom.x;
+        float right=viewTop.x;
         float center=(left+right)/2f;
         Element branch=view;
         Group group=view.parent;
         while(group!=null){
             for(Element element:group.getChildren()){
                 if(element==branch||element==topBar||!element.visible)continue;
-                if(element.getWidth()<=0f||element.getHeight()<=0f)continue;
-                if(element.getWidth()>view.getWidth()*0.55f||element.getHeight()<view.getHeight()*0.35f)continue;
-                Vec2 eb=element.localToStageCoordinates(new Vec2(0f,0f));
-                Vec2 et=element.localToStageCoordinates(new Vec2(element.getWidth(),element.getHeight()));
-                float overlap=Math.min(top.y,et.y)-Math.max(bottom.y,eb.y);
+                if(element.getWidth()<=0f||element.getHeight()<view.getHeight()*0.35f)continue;
+                Vec2 elementBottom=element.localToStageCoordinates(new Vec2(0f,0f));
+                Vec2 elementTop=element.localToStageCoordinates(new Vec2(element.getWidth(),element.getHeight()));
+                float overlap=Math.min(viewTop.y,elementTop.y)-Math.max(viewBottom.y,elementBottom.y);
                 if(overlap<view.getHeight()*0.3f)continue;
-                float ec=(eb.x+et.x)/2f;
-                if(ec<center&&et.x>left&&et.x<center)left=Math.max(left,et.x);
-                if(ec>center&&eb.x<right&&eb.x>center)right=Math.min(right,eb.x);
+                float elementCenter=(elementBottom.x+elementTop.x)/2f;
+                if(elementCenter<center&&elementTop.x>left&&elementBottom.x<center)left=Math.max(left,Math.min(elementTop.x,center));
+                if(elementCenter>center&&elementBottom.x<right&&elementTop.x>center)right=Math.min(right,Math.max(elementBottom.x,center));
             }
             branch=group;
             group=group.parent;
         }
-        Vec2 localBottom=view.parent.stageToLocalCoordinates(new Vec2(left,bottom.y));
-        Vec2 localTop=view.parent.stageToLocalCoordinates(new Vec2(right,top.y));
+        Vec2 localBottom=view.parent.stageToLocalCoordinates(new Vec2(left,viewBottom.y));
+        Vec2 localTop=view.parent.stageToLocalCoordinates(new Vec2(right,viewTop.y));
         return new float[]{localBottom.x,localBottom.y,localTop.x,localTop.y};
     }
     private static void removeTopBar(){
@@ -69,8 +65,6 @@ public class UpperUi{
         lastView=null;
         lastWidth=-1f;
         lastHeight=-1f;
-        lastX=-1f;
-        lastY=-1f;
     }
     private static void positionTopBar(MapView view,float[] bounds){
         if(topBar==null||topBar.parent!=view.parent)return;
@@ -86,10 +80,12 @@ public class UpperUi{
         Group parent=view.parent;
         topBar=new Table();
         topBar.setFillParent(false);
+        topBar.setClip(true);
         topBar.top().left();
         topBar.touchable=Touchable.childrenOnly;
         Table bar=new Table(Tex.button);
         bar.margin(4f);
+        bar.left();
         bar.defaults().size(42f,42f).pad(2f);
         ImageButton copyBtn=bar.button(Icon.copy,Styles.squareTogglei,()->LandCopyPast.toggleMode(Mode.copy)).tooltip(Core.bundle.get("upper.copy","Copy Terrain")).get();
         copyBtn.update(()->copyBtn.setChecked(LandCopyPast.mode==Mode.copy));
@@ -117,11 +113,7 @@ public class UpperUi{
             }
         }).tooltip(Core.bundle.get("upper.line45","Strict 45° Line Mode")).size(52f,42f).get();
         angleButton.update(()->angleButton.setChecked(CustomShapeManager.line45Mode));
-        ScrollPane pane=new ScrollPane(bar,Styles.noBarPane);
-        pane.setScrollingDisabled(false,true);
-        pane.setOverscroll(false,false);
-        pane.setFadeScrollBars(false);
-        topBar.add(pane).width(width).padTop(6f).left();
+        topBar.add(bar).width(width).left();
         topBar.pack();
         topBar.setSize(width,topBar.getPrefHeight());
         parent.addChild(topBar);
