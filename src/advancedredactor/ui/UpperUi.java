@@ -2,6 +2,7 @@ package advancedredactor.ui;
 import arc.*;
 import arc.math.geom.*;
 import arc.scene.*;
+import arc.scene.event.*;
 import arc.scene.ui.*;
 import arc.scene.ui.layout.*;
 import mindustry.*;
@@ -41,7 +42,7 @@ public class UpperUi{
         float left=bottom.x;
         float right=top.x;
         float center=(left+right)/2f;
-        Group branch=view;
+        Element branch=view;
         Group group=view.parent;
         while(group!=null){
             for(Element element:group.getChildren()){
