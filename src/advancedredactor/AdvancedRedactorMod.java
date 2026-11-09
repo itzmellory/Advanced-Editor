@@ -15,6 +15,7 @@ public class AdvancedRedactorMod extends Mod{
             StencilManager.init();
             LandCopyPast.init();
             UpperUi.init();
+            MapScreenshotHud.init();
         });
     }
     @Override public void loadContent(){}
