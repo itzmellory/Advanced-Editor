@@ -4,6 +4,7 @@ import arc.scene.*;
 import arc.scene.event.*;
 import arc.scene.ui.*;
 import arc.scene.ui.layout.*;
+import arc.scene.Touchable;
 import mindustry.*;
 import mindustry.game.EventType.Trigger;
 import mindustry.ui.*;
