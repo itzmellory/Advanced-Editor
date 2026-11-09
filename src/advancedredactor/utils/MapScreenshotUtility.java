@@ -5,14 +5,17 @@ import arc.graphics.*;
 import arc.graphics.gl.*;
 import arc.graphics.g2d.*;
 import arc.util.*;
+import arc.util.Buffers;
 import mindustry.*;
 import java.nio.*;
 import java.text.*;
 import java.util.*;
+
 public class MapScreenshotUtility{
     private static boolean capturing;
+
     public static void capture(){
-        if(capturing||Vars.editor==null||Vars.editor.isLoading()||Vars.editor.width()<=0||Vars.editor.height()<=0)return;
+        if(capturing||Vars.editor==null||Vars.editor.width()<=0||Vars.editor.height()<=0)return;
         capturing=true;
         Core.app.post(()->{
             FrameBuffer buffer=null;
@@ -28,7 +31,7 @@ public class MapScreenshotUtility{
                 Draw.reset();
                 Vars.editor.renderer.draw(0f,0f,width,height);
                 Draw.flush();
-                ByteBuffer pixels=BufferUtils.newByteBuffer(width*height*4);
+                ByteBuffer pixels=Buffers.newByteBuffer(width*height*4);
                 Core.gl.glReadPixels(0,0,width,height,GL20.GL_RGBA,GL20.GL_UNSIGNED_BYTE,pixels);
                 pixels.position(0);
                 pixmap=new Pixmap(pixels,width,height);
