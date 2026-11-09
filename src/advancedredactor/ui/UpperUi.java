@@ -50,8 +50,8 @@ public class UpperUi{
                 float overlap=Math.min(viewTop.y,elementTop.y)-Math.max(viewBottom.y,elementBottom.y);
                 if(overlap<view.getHeight()*0.3f)continue;
                 float elementCenter=(elementBottom.x+elementTop.x)/2f;
-                if(elementCenter<center&&elementTop.x>left&&elementBottom.x<center)left=Math.max(left,Math.min(elementTop.x,center));
-                if(elementCenter>center&&elementBottom.x<right&&elementTop.x>center)right=Math.min(right,Math.max(elementBottom.x,center));
+                if(elementCenter<center&&elementTop.x>left&&elementTop.x<=center&&elementBottom.x<center)left=Math.max(left,elementTop.x);
+                if(elementCenter>center&&elementBottom.x<right&&elementBottom.x>=center&&elementTop.x>center)right=Math.min(right,elementBottom.x);
             }
             branch=group;
             group=group.parent;
