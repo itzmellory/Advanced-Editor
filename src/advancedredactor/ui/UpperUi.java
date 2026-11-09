@@ -1,10 +1,9 @@
 package advancedredactor.ui;
 import arc.*;
+import arc.math.geom.*;
 import arc.scene.*;
-import arc.scene.event.*;
 import arc.scene.ui.*;
 import arc.scene.ui.layout.*;
-import arc.util.*;
 import mindustry.*;
 import mindustry.editor.*;
 import mindustry.game.EventType.*;
@@ -18,6 +17,8 @@ public class UpperUi{
     private static MapView lastView;
     private static float lastWidth=-1f;
     private static float lastHeight=-1f;
+    private static float lastX=-1f;
+    private static float lastY=-1f;
     public static void init(){
         Events.run(Trigger.update,UpperUi::update);
     }
@@ -28,27 +29,60 @@ public class UpperUi{
         }
         MapView view=Vars.ui.editor.getView();
         if(view==null||view.parent==null||view.getWidth()<=0f||view.getHeight()<=0f)return;
-        float width=view.getWidth(),height=view.getHeight();
-        if(topBar==null||topBar.parent!=view.parent||lastView!=view||Math.abs(lastWidth-width)>1f||Math.abs(lastHeight-height)>1f)buildTopBar(view);
-        positionTopBar(view);
+        float[] bounds=getAvailableBounds(view);
+        float width=Math.max(1f,bounds[2]-bounds[0]);
+        float height=view.getHeight();
+        if(topBar==null||topBar.parent!=view.parent||lastView!=view||Math.abs(lastWidth-width)>1f||Math.abs(lastHeight-height)>1f)buildTopBar(view,width);
+        positionTopBar(view,bounds);
+    }
+    private static float[] getAvailableBounds(MapView view){
+        Vec2 bottom=view.localToStageCoordinates(new Vec2(0f,0f));
+        Vec2 top=view.localToStageCoordinates(new Vec2(view.getWidth(),view.getHeight()));
+        float left=bottom.x;
+        float right=top.x;
+        float center=(left+right)/2f;
+        Group branch=view;
+        Group group=view.parent;
+        while(group!=null){
+            for(Element element:group.getChildren()){
+                if(element==branch||element==topBar||!element.visible)continue;
+                if(element.getWidth()<=0f||element.getHeight()<=0f)continue;
+                if(element.getWidth()>view.getWidth()*0.55f||element.getHeight()<view.getHeight()*0.35f)continue;
+                Vec2 eb=element.localToStageCoordinates(new Vec2(0f,0f));
+                Vec2 et=element.localToStageCoordinates(new Vec2(element.getWidth(),element.getHeight()));
+                float overlap=Math.min(top.y,et.y)-Math.max(bottom.y,eb.y);
+                if(overlap<view.getHeight()*0.3f)continue;
+                float ec=(eb.x+et.x)/2f;
+                if(ec<center&&et.x>left&&et.x<center)left=Math.max(left,et.x);
+                if(ec>center&&eb.x<right&&eb.x>center)right=Math.min(right,eb.x);
+            }
+            branch=group;
+            group=group.parent;
+        }
+        Vec2 localBottom=view.parent.stageToLocalCoordinates(new Vec2(left,bottom.y));
+        Vec2 localTop=view.parent.stageToLocalCoordinates(new Vec2(right,top.y));
+        return new float[]{localBottom.x,localBottom.y,localTop.x,localTop.y};
     }
     private static void removeTopBar(){
         if(topBar!=null){topBar.remove();topBar=null;}
         lastView=null;
         lastWidth=-1f;
         lastHeight=-1f;
+        lastX=-1f;
+        lastY=-1f;
     }
-    private static void positionTopBar(MapView view){
+    private static void positionTopBar(MapView view,float[] bounds){
         if(topBar==null||topBar.parent!=view.parent)return;
-        topBar.setSize(view.getWidth(),topBar.getPrefHeight());
-        topBar.setPosition(view.x,view.y+view.getHeight()-topBar.getHeight()-4f);
+        float width=Math.max(1f,bounds[2]-bounds[0]);
+        topBar.setSize(width,topBar.getPrefHeight());
+        topBar.setPosition(bounds[0],view.y+view.getHeight()-topBar.getHeight()-4f);
     }
-    private static void buildTopBar(MapView view){
+    private static void buildTopBar(MapView view,float width){
         if(topBar!=null)topBar.remove();
-        Group parent=view.parent;
         lastView=view;
-        lastWidth=view.getWidth();
+        lastWidth=width;
         lastHeight=view.getHeight();
+        Group parent=view.parent;
         topBar=new Table();
         topBar.setFillParent(false);
         topBar.top().left();
@@ -86,10 +120,9 @@ public class UpperUi{
         pane.setScrollingDisabled(false,true);
         pane.setOverscroll(false,false);
         pane.setFadeScrollBars(false);
-        topBar.add(pane).width(view.getWidth()).padTop(6f).left();
+        topBar.add(pane).width(width).padTop(6f).left();
         topBar.pack();
-        topBar.setSize(view.getWidth(),topBar.getPrefHeight());
+        topBar.setSize(width,topBar.getPrefHeight());
         parent.addChild(topBar);
-        positionTopBar(view);
     }
 }
