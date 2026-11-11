@@ -1,38 +1,51 @@
 package advancedredactor.ui;
 import arc.*;
+import arc.math.geom.*;
 import arc.scene.*;
+import arc.scene.event.*;
 import arc.scene.ui.layout.*;
 import mindustry.*;
 import mindustry.game.EventType.Trigger;
+import mindustry.gen.*;
 import mindustry.ui.*;
 import advancedredactor.utils.MapScreenshotUtility;
 public class MapScreenshotHud{
-    private static Table button;
+    private static Table container;
+    private static Table btnBox;
+    private static final Vec2 tmp=new Vec2();
     public static void init(){
         Events.run(Trigger.update,MapScreenshotHud::update);
     }
     private static void update(){
-        if(Vars.ui==null||Vars.ui.hudGroup==null||!Vars.state.isGame())return;
-        Element buttonsEl=Vars.ui.hudGroup.find("buttons");
-        if(buttonsEl instanceof Table){
-            Table buttons=(Table)buttonsEl;
-            if(buttons.find("ar-map-screenshot")==null){
-                buttons.table(Styles.black6,t->{
-                    t.name="ar-map-screenshot";
-                    t.button("",Styles.cleart,MapScreenshotUtility::capture).size(46.4f);
-                }).top().left();
-            }
-            return;
+        if(Vars.ui==null||Vars.ui.hudGroup==null)return;
+        if(container==null||container.parent!=Vars.ui.hudGroup){
+            if(container!=null)container.remove();
+            container=new Table();
+            container.setFillParent(true);
+            container.top().left();
+            container.touchable=Touchable.childrenOnly;
+            btnBox=new Table(Tex.buttonEdge3);
+            btnBox.button("",Styles.cleart,MapScreenshotUtility::capture).size(46f,46f);
+            btnBox.pack();
+            container.addChild(btnBox);
+            Vars.ui.hudGroup.addChild(container);
         }
-        if(button==null||button.parent!=Vars.ui.hudGroup){
-            if(button!=null)button.remove();
-            button=new Table(Styles.black6);
-            button.name="ar-map-screenshot-fallback";
-            button.button("",Styles.cleart,MapScreenshotUtility::capture).size(46.4f);
-            button.pack();
-            Vars.ui.hudGroup.addChild(button);
+        boolean show=Vars.state.isGame()&&(Vars.ui.hudfrag==null||Vars.ui.hudfrag.shown);
+        container.visible=show;
+        if(!show)return;
+        Element wavesEditor=Vars.ui.hudGroup.find("waves/editor");
+        Element buttons=wavesEditor instanceof Group?((Group)wavesEditor).find("buttons"):null;
+        if(buttons!=null&&buttons.visible){
+            tmp.set(buttons.getWidth(),0f);
+            buttons.localToStageCoordinates(tmp);
+            container.stageToLocalCoordinates(tmp);
+            btnBox.setSize(Scl.scl(48f),buttons.getHeight()>10f?buttons.getHeight():Scl.scl(48f));
+            btnBox.setPosition(tmp.x,tmp.y);
+        }else{
+            float w=Scl.scl(48f);
+            btnBox.setSize(w,w);
+            btnBox.setPosition(Scl.scl(240f),Core.graphics.getHeight()-w);
         }
-        button.visible=Vars.ui.hudfrag!=null&&Vars.ui.hudfrag.shown;
-        button.setPosition(Scl.scl(232f),Core.graphics.getHeight()-Scl.scl(46.4f));
+        container.toFront();
     }
 }
