@@ -6,7 +6,6 @@ import advancedredactor.ui.*;
 import advancedredactor.LeftSideUtils.*;
 import advancedredactor.upperuiutils.*;
 import advancedredactor.utils.*;
-import advancedredactor.ui.MapScreenshotHud;
 public class AdvancedRedactorMod extends Mod{
     public AdvancedRedactorMod(){
         Events.on(ClientLoadEvent.class,e->{
@@ -16,7 +15,6 @@ public class AdvancedRedactorMod extends Mod{
             StencilManager.init();
             LandCopyPast.init();
             UpperUi.init();
-            MapScreenshotHud.init();
         });
     }
     @Override public void loadContent(){}
