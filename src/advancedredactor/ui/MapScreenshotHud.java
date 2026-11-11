@@ -19,7 +19,7 @@ public class MapScreenshotHud{
             if(buttons.find("ar-map-screenshot")==null){
                 buttons.table(Styles.black6,t->{
                     t.name="ar-map-screenshot";
-                    t.button("",Styles.clearNonet,MapScreenshotUtility::capture).size(46.4f);
+                    t.button("",Styles.cleart,MapScreenshotUtility::capture).size(46.4f);
                 }).top().left();
             }
             return;
@@ -28,7 +28,7 @@ public class MapScreenshotHud{
             if(button!=null)button.remove();
             button=new Table(Styles.black6);
             button.name="ar-map-screenshot-fallback";
-            button.button("",Styles.clearNonet,MapScreenshotUtility::capture).size(46.4f);
+            button.button("",Styles.cleart,MapScreenshotUtility::capture).size(46.4f);
             button.pack();
             Vars.ui.hudGroup.addChild(button);
         }
