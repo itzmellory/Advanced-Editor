@@ -13,6 +13,7 @@ import mindustry.ui.*;
 import advancedredactor.upperuiutils.*;
 import advancedredactor.upperuiutils.LandCopyPast.*;
 import advancedredactor.upperuiutils.CustomShapeManager.*;
+import advancedredactor.utils.MapScreenshotUtility;
 public class UpperUi{
     private static Table topBar;
     private static MapView lastView;
@@ -113,6 +114,9 @@ public class UpperUi{
             }
         }).tooltip(Core.bundle.get("upper.line45","Strict 45° Line Mode")).size(52f,42f).get();
         angleButton.update(()->angleButton.setChecked(CustomShapeManager.line45Mode));
+        bar.image(Tex.whiteui).width(2f).height(34f).padLeft(4f).padRight(4f);
+        TextButton captureBtn=bar.button("",Styles.flatTogglet,MapScreenshotUtility::capture).tooltip(Core.bundle.get("upper.screenshot","Map Screenshot")).size(42f,42f).get();
+        captureBtn.update(()->captureBtn.setChecked(true));
         topBar.add(bar).width(width).left();
         topBar.pack();
         topBar.setSize(width,topBar.getPrefHeight());
